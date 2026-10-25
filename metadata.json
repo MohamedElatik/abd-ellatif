@@ -1,0 +1,6 @@
+{
+  "name": "منصة الأحياء التعليمية | BioMaster",
+  "description": "المنصة التعليمية المتكاملة لمادة الأحياء للثانوية العامة - شروحات تفاعلية، مجسم DNA ثلاثي الأبعاد، فيديوهات، امتحانات ومتابعة الحضور والغياب.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
