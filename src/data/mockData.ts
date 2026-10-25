@@ -7,7 +7,7 @@ import { Teacher, Course, Lecture, Quiz, Student, AttendanceRecord } from '../ty
 
 export const mockTeacher: Teacher = {
   id: 'teacher_1',
-  name: 'د. محمد الأحمدي',
+  name: 'د. عبد اللطيف الجمل',
   title: 'استشاري وخبير تدريس علم الأحياء للثانوية العامة واللغات',
   bio: 'معد برامج تعليمية معتمدة لطلاب الثانوية العامة، خبرة تزيد عن 15 عاماً في تبسيط مفاهيم البيولوجيا الجزيئية والتشريح، وتأهيل أوائل الجمهورية للالتحاق بكليات القمة.',
   avatar: '/src/assets/images/teacher_avatar_1792884174990.jpg',
