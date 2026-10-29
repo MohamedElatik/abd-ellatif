@@ -90,6 +90,7 @@ export const mockCourses: Course[] = [
 export const mockLectures: Lecture[] = [
   {
     id: 'lec_1',
+    playbackProvider: 'vdocipher',
     courseId: 'course_sec3_full',
     unitId: 'u1',
     grade: 'sec3',
@@ -98,9 +99,9 @@ export const mockLectures: Lecture[] = [
     description: 'شرح الفروق الجوهرية بين الدعامة الفسيولوجية المؤقتة والخاصية الأسموزية، والدعامة التركيبية الدائمة وترسيبات السليلوز واللجنين والكيوتين والسييوبرين مع تجارب معملية وتطبيقات عملية.',
     videoDuration: '48:20',
     videoDurationMinutes: 48,
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    videoUrl: '', // VdoCipher playback credentials come only from /api/vdocipher/otp.
     thumbnail: '/src/assets/images/biology_course_anatomy_1792884201475.jpg',
-    isFreePreview: true,
+    isFreePreview: false,
     pdfAttachment: {
       title: 'ملزمة المحاضرة الأولى - الدعامة في النبات (PDF).pdf',
       size: '4.8 MB',

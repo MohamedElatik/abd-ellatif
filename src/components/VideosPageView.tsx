@@ -6,6 +6,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Lecture, GradeLevel } from '../types';
 import { mockLectures } from '../data/mockData';
+import { DrmPlayer } from './DrmPlayer';
 import {
   Play,
   Clock,
@@ -20,12 +21,14 @@ import {
 } from 'lucide-react';
 
 interface VideosPageViewProps {
+  onSignIn: () => void;
   onStartQuiz: (quizId: string) => void;
   selectedLectureId?: string;
   onClearSelectedLecture?: () => void;
 }
 
 export const VideosPageView: React.FC<VideosPageViewProps> = ({
+  onSignIn,
   onStartQuiz,
   selectedLectureId,
   onClearSelectedLecture,
@@ -153,18 +156,20 @@ export const VideosPageView: React.FC<VideosPageViewProps> = ({
 
             {/* Video Canvas Container */}
             <div className="relative aspect-video rounded-xl overflow-hidden bg-black shadow-inner">
-              <video
+              {activeVideo.playbackProvider === 'vdocipher' ? (
+                <DrmPlayer key={activeVideo.id} lectureId={activeVideo.id} title={activeVideo.title} onSignIn={onSignIn} />
+              ) : <video
                 ref={videoRef}
                 src={activeVideo.videoUrl}
                 controls
                 autoPlay
                 className="w-full h-full object-contain"
-              />
+              />}
             </div>
 
             {/* Playback Controls & Lesson Meta */}
             <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
-              <div className="flex items-center gap-2 text-xs text-slate-300">
+              {activeVideo.playbackProvider !== 'vdocipher' && <div className="flex items-center gap-2 text-xs text-slate-300">
                 <FastForward className="w-4 h-4 text-emerald-400" />
                 <span>سرعة الفيديو:</span>
                 {[1, 1.25, 1.5, 2].map(sp => (
@@ -180,7 +185,7 @@ export const VideosPageView: React.FC<VideosPageViewProps> = ({
                     {sp}x
                   </button>
                 ))}
-              </div>
+              </div>}
 
               <div className="flex items-center gap-3">
                 {activeVideo.pdfAttachment && (

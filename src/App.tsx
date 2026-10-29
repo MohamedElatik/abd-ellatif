@@ -5,8 +5,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { User, Quiz } from './types';
+import { currentAuthUser, AUTH_CHANGED } from './utils/auth';
 import {
-  getStoredCurrentUser,
   getStoredTheme,
   saveStoredTheme,
   getStoredQuizzes,
@@ -34,7 +34,12 @@ import {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'home' | 'teacher' | 'videos' | 'exams' | 'admin'>('home');
-  const [currentUser, setCurrentUser] = useState<User>(() => getStoredCurrentUser());
+  const [currentUser, setCurrentUser] = useState<User>(() => currentAuthUser());
+  useEffect(() => {
+    const sync = () => setCurrentUser(currentAuthUser());
+    window.addEventListener(AUTH_CHANGED, sync);
+    return () => window.removeEventListener(AUTH_CHANGED, sync);
+  }, []);
   const [isDark, setIsDark] = useState<boolean>(() => getStoredTheme() === 'dark');
 
   // Modals & Active selections
@@ -236,6 +241,7 @@ export default function App() {
         {/* 3. Videos Page View (Bassthalk format) */}
         {activeTab === 'videos' && (
           <VideosPageView
+            onSignIn={() => setShowAuthModal(true)}
             onStartQuiz={handleStartQuiz}
             selectedLectureId={selectedLectureId}
             onClearSelectedLecture={() => setSelectedLectureId(undefined)}
@@ -338,11 +344,11 @@ export default function App() {
                 </div>
 
                 <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400">
-                  للوصول للوحة التحكم، يرجى تسجيل الدخول بحساب المعلم أو التبديل للحساب التجريبي الخاص بالمدرس.
+                  تفعيل اشتراكات الفيديو يتم بواسطة إدارة المنصة.
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-                  <button
+                  {import.meta.env.DEV && <button
                     onClick={() => {
                       const teacherUser = {
                         id: 'teacher_1',
@@ -356,8 +362,8 @@ export default function App() {
                     }}
                     className="w-full sm:w-auto px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-md transition-colors"
                   >
-                    تسجيل الدخول كمعلم / أدمن
-                  </button>
+                    معاينة لوحة المدرس التجريبية محليًا
+                  </button>}
 
                   <button
                     onClick={() => setActiveTab('home')}

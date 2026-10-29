@@ -80,6 +80,7 @@ export interface Lecture {
   videoDuration: string; // e.g. "45:30"
   videoDurationMinutes: number;
   videoUrl: string; // embedded or direct url
+  playbackProvider?: 'vdocipher';
   thumbnail: string;
   isFreePreview: boolean;
   pdfAttachment?: {
