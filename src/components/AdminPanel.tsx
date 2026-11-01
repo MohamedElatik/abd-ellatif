@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { fetchRegisteredStudents, RegisteredStudent } from '../utils/students';
 import { Student, AttendanceRecord, Quiz, Question, GradeLevel, AttendanceStatus } from '../types';
 import {
-  getStoredStudents,
   getStoredAttendance,
   saveStoredAttendance,
   getStoredQuizzes,
@@ -39,7 +39,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSelectQuiz, onExitAdmi
   const [activeTab, setActiveTab] = useState<'attendance' | 'quizzes' | 'students'>('attendance');
 
   // Dynamic state loaded from persistent storage
-  const [students, setStudents] = useState<Student[]>(() => getStoredStudents());
+  const [students, setStudents] = useState<RegisteredStudent[]>([]);
+  const [studentsLoading, setStudentsLoading] = useState(true);
+  const [studentsError, setStudentsError] = useState('');
+  const [reloadStudents, setReloadStudents] = useState(0);
+  useEffect(() => {
+    const controller = new AbortController();
+    setStudentsLoading(true); setStudentsError(''); setStudents([]);
+    fetchRegisteredStudents(controller.signal).then(data => { if (!controller.signal.aborted) setStudents(data); })
+      .catch(error => { if (!controller.signal.aborted) setStudentsError(error.message || 'تعذر تحميل الطلاب.'); })
+      .finally(() => { if (!controller.signal.aborted) setStudentsLoading(false); });
+    return () => controller.abort();
+  }, [reloadStudents]);
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>(() => getStoredAttendance());
   const [quizzes, setQuizzes] = useState<Quiz[]>(() => getStoredQuizzes());
 
@@ -164,6 +175,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSelectQuiz, onExitAdmi
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100 py-8 px-4 sm:px-6 lg:px-8 transition-colors">
       <div className="max-w-7xl mx-auto space-y-8">
+        <div className="flex flex-wrap items-center gap-3 text-sm">
+          <button className="rounded-lg bg-emerald-600 px-4 py-2 text-white disabled:opacity-50" disabled={studentsLoading} onClick={() => setReloadStudents(n => n + 1)}>تحديث سجل الطلاب</button>
+          {studentsLoading && <span role="status">جارٍ تحميل الطلاب من قاعدة البيانات…</span>}
+          {studentsError && <span role="alert" className="text-rose-400">{studentsError}</span>}
+          {!studentsLoading && !studentsError && <span>الطلاب المسجلون فعليًا: {students.length} — حساب المعلم غير محسوب.</span>}
+          {!studentsLoading && !studentsError && students.length === 0 && <span>لا يوجد طلاب مسجلون بعد.</span>}
+          {students.length === 1000 && <span>يظهر أحدث 1000 طالب.</span>}
+        </div>
         
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-6">
@@ -544,14 +563,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSelectQuiz, onExitAdmi
                   {students.map(st => (
                     <tr key={st.id} className="hover:bg-slate-750/50">
                       <td className="py-3 px-4 font-mono font-bold text-emerald-400">{st.studentCode}</td>
-                      <td className="py-3 px-4 font-semibold text-white">{st.name}</td>
+                      <td className="py-3 px-4 font-semibold text-white">{st.name}<div className="text-xs text-slate-400" dir="ltr">{st.email}</div><div className="text-xs">{st.confirmed ? 'البريد مؤكد' : 'بانتظار تأكيد البريد'} · {st.enrolledCourses.length ? 'اشتراك فعال' : 'بدون اشتراك فعال'}</div></td>
                       <td className="py-3 px-4 text-slate-300 tabular-nums">
                         <div>طالب: {st.phone}</div>
                         <div className="text-[11px] text-slate-400">ولي الأمر: {st.parentPhone || 'غير مسجل'}</div>
                       </td>
                       <td className="py-3 px-4 text-slate-300">
                         {st.grade === 'sec3' ? 'ثالثة ثانوي' : st.grade === 'sec2' ? 'ثانية ثانوي' : 'أولى ثانوي'}
-                        <div className="text-[11px] text-slate-400">{st.governorate || 'القاهرة'}</div>
+                        <div className="text-[11px] text-slate-400">{st.governorate || 'غير مسجلة'}</div>
                       </td>
                       <td className="py-3 px-4">
                         {st.examAttempts && st.examAttempts.length > 0 ? (
@@ -565,7 +584,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSelectQuiz, onExitAdmi
                             ))}
                           </div>
                         ) : (
-                          <span className="text-slate-500">لم يختبر بعد</span>
+                          <span className="text-slate-500">لا توجد نتائج محفوظة في قاعدة البيانات</span>
                         )}
                       </td>
                       <td className="py-3 px-4 text-slate-400 tabular-nums">{st.createdAt}</td>
