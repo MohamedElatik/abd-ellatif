@@ -37,7 +37,7 @@ export const TeacherProfileView: React.FC<TeacherProfileViewProps> = ({
 }) => {
   // Tabs matching Bassthalk teacher page
   const [activeSubTab, setActiveSubTab] = useState<'courses' | 'videos' | 'revisions' | 'quizzes' | 'about'>('courses');
-  const [selectedGrade, setSelectedGrade] = useState<GradeLevel | 'all'>('all');
+  const [selectedGrade, setSelectedGrade] = useState<GradeLevel | 'all'>('sec3');
 
   const filteredCourses = selectedGrade === 'all'
     ? mockCourses
@@ -155,7 +155,7 @@ export const TeacherProfileView: React.FC<TeacherProfileViewProps> = ({
                   : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
             >
-              الكورسات والصفوف
+              كورسات الثالث الثانوي
             </button>
 
             <button
@@ -208,16 +208,7 @@ export const TeacherProfileView: React.FC<TeacherProfileViewProps> = ({
       {/* 3. Grade Filter Pill-Bar (Bassthalk Grade Level Filter) */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
         <div className="flex items-center gap-2 mb-8 overflow-x-auto p-1 bg-white dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-800 w-fit shadow-xs">
-          <button
-            onClick={() => setSelectedGrade('all')}
-            className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap ${
-              selectedGrade === 'all'
-                ? 'bg-emerald-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            جميع الصفوف
-          </button>
+          
           <button
             onClick={() => setSelectedGrade('sec3')}
             className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap ${
@@ -228,26 +219,8 @@ export const TeacherProfileView: React.FC<TeacherProfileViewProps> = ({
           >
             الصف الثالث الثانوي (الثانوية العامة)
           </button>
-          <button
-            onClick={() => setSelectedGrade('sec2')}
-            className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap ${
-              selectedGrade === 'sec2'
-                ? 'bg-emerald-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            الصف الثاني الثانوي
-          </button>
-          <button
-            onClick={() => setSelectedGrade('sec1')}
-            className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap ${
-              selectedGrade === 'sec1'
-                ? 'bg-emerald-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            الصف الأول الثانوي
-          </button>
+          
+          
         </div>
 
         {/* Tab 1: Courses (الكورسات) */}

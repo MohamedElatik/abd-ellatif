@@ -59,7 +59,7 @@ export function saveStoredCurrentUser(user: User): void {
 export function getStoredStudents(): Student[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.STUDENTS);
-    if (raw) return JSON.parse(raw);
+    if (raw) return (JSON.parse(raw) as Student[]).filter(item => item.grade === 'sec3');
   } catch {}
   return mockStudents;
 }
@@ -127,7 +127,7 @@ export function saveStoredAttendance(records: AttendanceRecord[]): void {
 export function getStoredQuizzes(): Quiz[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.QUIZZES);
-    if (raw) return JSON.parse(raw);
+    if (raw) return (JSON.parse(raw) as Quiz[]).filter(item => item.grade === 'sec3');
   } catch {}
   return mockQuizzes;
 }

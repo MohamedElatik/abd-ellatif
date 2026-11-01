@@ -31,7 +31,7 @@ export function AuthModal({ currentUser, onClose, onUserChanged }: Props) {
   return <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="auth-title">
     <div className="my-auto w-full max-w-md rounded-3xl border border-slate-700 bg-slate-900 p-6 text-white shadow-2xl">
       <div className="mb-5 flex items-center justify-between">
-        <h2 id="auth-title" className="font-bold">{mode === 'login' ? 'تسجيل دخول الطالب' : 'إنشاء حساب طالب'}</h2>
+        <h2 id="auth-title" className="font-bold">{mode === 'login' ? 'تسجيل الدخول — الطالب أو المعلم' : 'إنشاء حساب طالب'}</h2>
         <button type="button" onClick={onClose} aria-label="إغلاق"><X className="h-5 w-5" /></button>
       </div>
       {currentUser.id !== 'guest' && <div className="mb-4 text-sm">
@@ -49,15 +49,15 @@ export function AuthModal({ currentUser, onClose, onUserChanged }: Props) {
           <input className={field} type="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)} dir="ltr" />
         </label>
         <label className="block text-sm">كلمة المرور
-          <input className={field} type="password" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} required minLength={mode === 'register' ? 12 : 1} value={password} onChange={e => setPassword(e.target.value)} />
+          <input className={field} type="password" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} required minLength={mode === 'register' ? 6 : 1} value={password} onChange={e => setPassword(e.target.value)} />
         </label>
         {mode === 'register' && <>
           <label className="block text-sm">اسم الطالب<input className={field} required maxLength={100} value={name} onChange={e => setName(e.target.value)} autoComplete="name" /></label>
           <label className="block text-sm">هاتف الطالب<input className={field} type="tel" required minLength={10} maxLength={20} value={phone} onChange={e => setPhone(e.target.value)} autoComplete="tel" /></label>
           <label className="block text-sm">هاتف ولي الأمر<input className={field} type="tel" required minLength={10} maxLength={20} value={parentPhone} onChange={e => setParentPhone(e.target.value)} /></label>
-          <label className="block text-sm">الصف الدراسي<select className={field} value={grade} onChange={e => setGrade(e.target.value as GradeLevel)}><option value="sec1">الأول الثانوي</option><option value="sec2">الثاني الثانوي</option><option value="sec3">الثالث الثانوي</option></select></label>
+          <label className="block text-sm">الصف الدراسي<select className={field} value={grade} onChange={e => setGrade(e.target.value as GradeLevel)}><option value="sec3">الثالث الثانوي</option></select></label>
           <label className="block text-sm">المحافظة<input className={field} maxLength={100} value={governorate} onChange={e => setGovernorate(e.target.value)} /></label>
-          <p className="text-xs text-slate-400">استخدم كلمة مرور من 12 حرفًا على الأقل. إنشاء الحساب لا يفعّل اشتراك الكورس تلقائيًا.</p>
+          <p className="text-xs text-slate-400">استخدم كلمة مرور من 6 أحرف على الأقل. إنشاء الحساب لا يفعّل اشتراك الكورس تلقائيًا.</p>
         </>}
         {error && <p role="alert" className="text-sm text-rose-300">{error}</p>}
         {message && <p role="status" className="text-sm text-emerald-300">{message}</p>}

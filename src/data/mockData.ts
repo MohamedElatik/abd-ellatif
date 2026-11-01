@@ -27,7 +27,7 @@ export const mockTeacher: Teacher = {
   },
 };
 
-export const mockCourses: Course[] = [
+const all_mockCourses: Course[] = [
   {
     id: 'course_sec3_full',
     title: 'المعسكر الذهبي في الأحياء - الصف الثالث الثانوي',
@@ -87,7 +87,7 @@ export const mockCourses: Course[] = [
   },
 ];
 
-export const mockLectures: Lecture[] = [
+const all_mockLectures: Lecture[] = [
   {
     id: 'lec_1',
     playbackProvider: 'vdocipher',
@@ -235,7 +235,7 @@ export const mockLectures: Lecture[] = [
   },
 ];
 
-export const mockQuizzes: Quiz[] = [
+const all_mockQuizzes: Quiz[] = [
   {
     id: 'quiz_lec_1',
     title: 'كويز الدرس الأول: الدعامة الفسيولوجية والتركيبية في النبات',
@@ -427,7 +427,7 @@ export const mockQuizzes: Quiz[] = [
   },
 ];
 
-export const mockStudents: Student[] = [
+const all_mockStudents: Student[] = [
   {
     id: 'std_1',
     studentCode: 'BIO-2026-001',
@@ -608,3 +608,11 @@ export const mockAttendanceRecords: AttendanceRecord[] = [
     status: 'present',
   },
 ];
+
+export const mockCourses = all_mockCourses.filter(item => item.grade === 'sec3');
+
+export const mockLectures = all_mockLectures.filter(item => item.grade === 'sec3');
+
+export const mockQuizzes = all_mockQuizzes.filter(item => item.grade === 'sec3');
+
+export const mockStudents = all_mockStudents.filter(item => item.grade === 'sec3');

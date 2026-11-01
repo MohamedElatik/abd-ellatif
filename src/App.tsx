@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { User, Quiz } from './types';
-import { currentAuthUser, AUTH_CHANGED } from './utils/auth';
+import { currentAuthUser, AUTH_CHANGED, refreshIdentity } from './utils/auth';
 import {
   getStoredTheme,
   saveStoredTheme,
@@ -38,6 +38,7 @@ export default function App() {
   useEffect(() => {
     const sync = () => setCurrentUser(currentAuthUser());
     window.addEventListener(AUTH_CHANGED, sync);
+    void refreshIdentity();
     return () => window.removeEventListener(AUTH_CHANGED, sync);
   }, []);
   const [isDark, setIsDark] = useState<boolean>(() => getStoredTheme() === 'dark');
@@ -118,10 +119,10 @@ export default function App() {
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10">
                 <div>
                   <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 block mb-1">
-                    المناهج والصفوف الدراسية
+                    منهج الصف الثالث الثانوي
                   </span>
                   <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
-                    كورسات الأحياء المتخصصة للثانوية العامة
+                    كورسات الأحياء للصف الثالث الثانوي
                   </h2>
                 </div>
 
@@ -348,22 +349,7 @@ export default function App() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-                  {import.meta.env.DEV && <button
-                    onClick={() => {
-                      const teacherUser = {
-                        id: 'teacher_1',
-                        name: 'د. محمد الأحمدي (المدرس)',
-                        phone: '01012345678',
-                        email: 'dr.alahmady.biology@gmail.com',
-                        role: 'teacher' as const,
-                        createdAt: '2026-01-01',
-                      };
-                      setCurrentUser(teacherUser);
-                    }}
-                    className="w-full sm:w-auto px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-md transition-colors"
-                  >
-                    معاينة لوحة المدرس التجريبية محليًا
-                  </button>}
+                  <button onClick={() => setShowAuthModal(true)} className="rounded-xl bg-emerald-600 px-6 py-3 text-white">تسجيل دخول المعلم</button>
 
                   <button
                     onClick={() => setActiveTab('home')}

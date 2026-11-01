@@ -100,36 +100,9 @@ export const VideosPageView: React.FC<VideosPageViewProps> = ({
           >
             الصف الثالث الثانوي (الثانوية العامة)
           </button>
-          <button
-            onClick={() => setSelectedGrade('sec2')}
-            className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap ${
-              selectedGrade === 'sec2'
-                ? 'bg-emerald-600 text-white shadow-sm'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            الصف الثاني الثانوي
-          </button>
-          <button
-            onClick={() => setSelectedGrade('sec1')}
-            className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap ${
-              selectedGrade === 'sec1'
-                ? 'bg-emerald-600 text-white shadow-sm'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            الصف الأول الثانوي
-          </button>
-          <button
-            onClick={() => setSelectedGrade('all')}
-            className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap ${
-              selectedGrade === 'all'
-                ? 'bg-emerald-600 text-white shadow-sm'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            جميع الدروس
-          </button>
+          
+          
+          
         </div>
 
         {/* Video Player Modal/Theater (When a video is active) */}

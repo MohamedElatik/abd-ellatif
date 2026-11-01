@@ -21,5 +21,5 @@ test('invalid recovery token cannot change password or sign out',async()=>{
 });
 test('successful reset retires recovery session',async()=>{
   const calls:string[]=[];globalThis.fetch=async(url,init)=>{calls.push(String(url));assert.equal((init!.headers as Record<string,string>).Authorization,'Bearer recovery');return Response.json({});};
-  await resetPassword('recovery','long-password-123');assert.ok(calls[0].endsWith('/user'));assert.ok(calls[1].endsWith('/logout'));
+  await resetPassword('recovery','abcdef');assert.ok(calls[0].endsWith('/user'));assert.ok(calls[1].endsWith('/logout'));
 });

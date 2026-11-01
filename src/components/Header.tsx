@@ -57,7 +57,7 @@ export const Header: React.FC<HeaderProps> = ({
               BioMaster
             </span>
             <span className="text-xs text-emerald-600 dark:text-emerald-400/90 font-medium">
-              د. محمد الأحمدي
+              د. عبد اللطيف الجمل
             </span>
           </div>
         </button>
@@ -133,7 +133,7 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={onOpenAuth}
             className="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 rounded-lg shadow-sm shadow-emerald-900/30 transition-colors whitespace-nowrap shrink-0"
           >
-            {currentUser.role === 'teacher' ? (
+            {isAdminOrTeacher ? (
               <>
                 <ShieldCheck className="w-4 h-4 text-emerald-100" />
                 <span>حساب المعلم</span>

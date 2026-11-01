@@ -28,9 +28,9 @@ export function Recovery() {
       }}>
         <h2 className="font-bold">{token ? 'اختر كلمة مرور جديدة' : 'استعادة كلمة المرور'}</h2>
         {token ? <>
-          <label className="block">كلمة المرور الجديدة<input className="mt-2 w-full rounded-lg bg-slate-800 p-3" type="password" autoComplete="new-password" minLength={12} required value={password} onChange={e => setPassword(e.target.value)} /></label>
-          <label className="block">تأكيد كلمة المرور<input className="mt-2 w-full rounded-lg bg-slate-800 p-3" type="password" autoComplete="new-password" minLength={12} required value={confirm} onChange={e => setConfirm(e.target.value)} /></label>
-          <p className="text-sm">استخدم 12 حرفًا على الأقل.</p>
+          <label className="block">كلمة المرور الجديدة<input className="mt-2 w-full rounded-lg bg-slate-800 p-3" type="password" autoComplete="new-password" minLength={6} required value={password} onChange={e => setPassword(e.target.value)} /></label>
+          <label className="block">تأكيد كلمة المرور<input className="mt-2 w-full rounded-lg bg-slate-800 p-3" type="password" autoComplete="new-password" minLength={6} required value={confirm} onChange={e => setConfirm(e.target.value)} /></label>
+          <p className="text-sm">استخدم 6 أحرف على الأقل.</p>
         </> : <label className="block">البريد الإلكتروني<input className="mt-2 w-full rounded-lg bg-slate-800 p-3" dir="ltr" type="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)} /></label>}
         {error && <p role="alert" className="text-rose-300">{error}</p>}
         {message && <p role="status" className="text-emerald-300">{message}</p>}

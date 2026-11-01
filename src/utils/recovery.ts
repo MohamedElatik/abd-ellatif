@@ -20,7 +20,7 @@ export async function requestRecovery(email: string) {
 }
 
 export async function resetPassword(token: string, password: string) {
-  if (!token || password.length < 12) throw new Error('استخدم رابط استعادة صالحًا وكلمة مرور من 12 حرفًا على الأقل.');
+  if (!token || password.length < 6) throw new Error('استخدم رابط استعادة صالحًا وكلمة مرور من 6 أحرف على الأقل.');
   const headers = { apikey: supabasePublishableKey, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
   const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
     method: 'PUT', headers, body: JSON.stringify({ password }), signal: AbortSignal.timeout(15000),

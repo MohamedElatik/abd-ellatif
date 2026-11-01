@@ -134,7 +134,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSelectQuiz, onExitAdmi
       id: 'quiz_' + Date.now(),
       title: newQuizTitle.trim(),
       grade: newQuizGrade,
-      gradeTitle: newQuizGrade === 'sec3' ? 'الصف الثالث الثانوي' : newQuizGrade === 'sec2' ? 'الصف الثاني الثانوي' : 'الصف الأول الثانوي',
+      gradeTitle: 'الصف الثالث الثانوي',
       unitTitle: newQuizUnit,
       description: isComprehensive ? 'امتحان شامل مطابق للثانوية العامة' : 'كويز تقييمي سريع لمتابعة الاستيعاب',
       isComprehensiveExam: isComprehensive,
@@ -325,10 +325,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSelectQuiz, onExitAdmi
                     onChange={e => setSelectedGrade(e.target.value as GradeLevel | 'all')}
                     className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
                   >
-                    <option value="all">جميع الصفوف الدراسية</option>
+                    
                     <option value="sec3">الصف الثالث الثانوي</option>
-                    <option value="sec2">الصف الثاني الثانوي</option>
-                    <option value="sec1">الصف الأول الثانوي</option>
+                    
+                    
                   </select>
                 </div>
               </div>
@@ -613,8 +613,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSelectQuiz, onExitAdmi
                       className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-emerald-500"
                     >
                       <option value="sec3">الصف الثالث الثانوي</option>
-                      <option value="sec2">الصف الثاني الثانوي</option>
-                      <option value="sec1">الصف الأول الثانوي</option>
+                      
+                      
                     </select>
                   </div>
 

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { signIn, signUp, signOut, readSession, currentAuthUser, clearSession } from '../src/utils/auth';
+import { signIn, signUp, signOut, readSession, currentAuthUser, clearSession, refreshIdentity } from '../src/utils/auth';
 
 const values = new Map<string, string>();
 Object.assign(globalThis, {
@@ -49,4 +49,14 @@ test('expired saved token cannot authorize a new playback request',()=>{
 test('sign-out clears the player session even when the network fails',async()=>{
   clearSession();globalThis.fetch=async()=>Response.json(response);await signIn('student@example.invalid','test-password');
   globalThis.fetch=async()=>{throw new Error('offline');};await signOut();assert.equal(readSession(),null);assert.equal(currentAuthUser().id,'guest');
+});
+
+test('only server-controlled app metadata grants teacher admin UI',async()=>{
+  clearSession();globalThis.fetch=async()=>Response.json({...response,user:{...response.user,app_metadata:{role:'admin'}}});
+  assert.equal((await signIn('teacher@example.invalid','abcdef')).role,'admin');
+  assert.equal(currentAuthUser().role,'admin');
+  clearSession();
+  values.set('biomaster_verified_session_v1',JSON.stringify({access_token:'forged',expires_at:Date.now()/1000+3600,user:{id:'verified-user',role:'admin'}}));
+  assert.equal(currentAuthUser().role,'student');
+  globalThis.fetch=async()=>Response.json(response.user);await refreshIdentity();assert.equal(currentAuthUser().role,'student');
 });
