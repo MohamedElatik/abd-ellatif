@@ -1,8 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { mockCourses, mockLectures, mockQuizzes, mockStudents } from '../src/data/mockData';
 import { signIn, signUp, signOut, readSession, currentAuthUser, clearSession, refreshIdentity } from '../src/utils/auth';
 
 const values = new Map<string, string>();
+test('catalog and demo students only expose third secondary',()=>{
+  for (const collection of [mockCourses, mockLectures, mockQuizzes, mockStudents]) {
+    assert.ok(collection.length > 0); assert.ok(collection.every(item => item.grade === 'sec3'));
+  }
+});
 Object.assign(globalThis, {
   window: new EventTarget(),
   sessionStorage: { getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, value: string) => values.set(key, value), removeItem: (key: string) => values.delete(key) },
@@ -60,3 +66,4 @@ test('only server-controlled app metadata grants teacher admin UI',async()=>{
   assert.equal(currentAuthUser().role,'student');
   globalThis.fetch=async()=>Response.json(response.user);await refreshIdentity();assert.equal(currentAuthUser().role,'student');
 });
+
