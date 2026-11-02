@@ -2,14 +2,41 @@
 
 @variant dark (&:where(.dark, .dark *));
 
-@layer base {
-  :root {
-    --font-sans: 'Cairo', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-  }
+/* Site palette: Tailwind's "slate" grays are remapped to the landing page's green-tinted neutrals,
+   so every page built with slate-* classes picks up the same theme. */
+@theme {
+  --color-slate-50: #f5f8f7;
+  --color-slate-100: #eef4f2;
+  --color-slate-200: #dde7e3;
+  --color-slate-300: #c3d2cd;
+  --color-slate-400: #9fb3b0;
+  --color-slate-500: #6c7f80;
+  --color-slate-600: #4c5a62;
+  --color-slate-700: #2a3b45;
+  --color-slate-800: #1d2d39;
+  --color-slate-900: #0d1620;
+  --color-slate-950: #070c12;
+  --font-sans: 'Tajawal', 'Cairo', system-ui, -apple-system, sans-serif;
+}
 
+@layer base {
   body {
     font-family: var(--font-sans);
   }
+  h1, h2, h3, h4 {
+    font-family: 'Cairo', 'Tajawal', system-ui, sans-serif;
+  }
+}
+
+/* Same glowing gradient as the landing page's primary buttons. */
+button.bg-emerald-600, a.bg-emerald-600 {
+  background-image: linear-gradient(135deg, #34d399, #10b981 45%, #059669);
+  box-shadow: 0 0 0 1px rgb(16 185 129 / .3), 0 10px 24px -12px rgb(16 185 129 / .9);
+  transition: transform .15s ease, filter .15s ease, box-shadow .15s ease;
+}
+button.bg-emerald-600:hover:not(:disabled), a.bg-emerald-600:hover {
+  transform: translateY(-1px);
+  filter: saturate(1.15) brightness(1.05);
 }
 
 /* Custom smooth scrollbar */
@@ -21,10 +48,9 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(16, 185, 129, 0.2);
+  background: rgba(16, 185, 129, 0.35);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.6);
 }
-

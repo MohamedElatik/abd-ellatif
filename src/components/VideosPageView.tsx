@@ -65,14 +65,9 @@ export const VideosPageView: React.FC<VideosPageViewProps> = ({
         
         {/* Header / Intro matching Bassthalk video layout */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-6">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mb-2">
-              مكتبة الفيديوهات والمحاضرات
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
-              شروحات وافية مقسمة حسب الوحدات، مع ملازم PDF مرفقة وكويزات قياس الفهم الفوري.
-            </p>
-          </div>
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
+            مكتبة الفيديوهات والمحاضرات
+          </h2>
 
           {/* Search Input */}
           <div className="relative w-full md:w-72">
@@ -87,7 +82,7 @@ export const VideosPageView: React.FC<VideosPageViewProps> = ({
           </div>
         </div>
 
-        {error&&<p role="alert">{error}</p>}<label>الكورس<select className="p-3 rounded-lg bg-slate-800 text-white mx-3" value={courseFilter} onChange={e=>setCourseFilter(e.target.value)}><option value="">كل الكورسات</option>{courses.map(c=><option key={c.id} value={c.id}>{c.title} — {c.isFree?'مجاني':c.price+' ج.م'}</option>)}</select></label>
+        {error&&<p role="alert">{error}</p>}<label>الكورس<select className="p-3 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700 mx-3" value={courseFilter} onChange={e=>setCourseFilter(e.target.value)}><option value="">كل الكورسات</option>{courses.map(c=><option key={c.id} value={c.id}>{c.title} — {c.isFree?'مجاني':c.price+' ج.م'}</option>)}</select></label>
         {/* Grade Selector Tabs (Bassthalk style) */}
         <div className="flex items-center gap-2 overflow-x-auto p-1 bg-white dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-800 w-fit shadow-xs">
           <button

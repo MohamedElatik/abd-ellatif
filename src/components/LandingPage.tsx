@@ -1,19 +1,17 @@
-import React, { useState } from 'react';
+import React from 'react';
 import type { User } from '../types';
-import { LogIn, Menu, Moon, Sun, X } from 'lucide-react';
+import { LogIn } from 'lucide-react';
 import './landing.css';
 
-type Tab = 'home' | 'teacher' | 'videos' | 'exams' | 'admin' | 'account';
+import type { Tab } from './SiteChrome';
 
 interface Props {
   currentUser: User;
   onOpenAuth: () => void;
   onNavigate: (tab: Tab) => void;
-  isDark: boolean;
-  onToggleTheme: () => void;
 }
 
-const IMG = '/landing';
+const IMG = `${import.meta.env.BASE_URL}landing`;
 
 const STUDENTS = [
   { src: 'stu1.jpg', name: 'اسم الطالب', alt: 'تكريم متفوقة في الأحياء' },
@@ -24,63 +22,19 @@ const STUDENTS = [
   { src: 'stu6.jpg', name: 'مجموعة المتفوقين', alt: 'تكريم مجموعة من المتفوقين' },
 ];
 
-export function LandingPage({ currentUser, onOpenAuth, onNavigate, isDark, onToggleTheme }: Props) {
-  const [menuOpen, setMenuOpen] = useState(false);
+export function LandingPage({ currentUser, onOpenAuth, onNavigate }: Props) {
   const isGuest = currentUser.id === 'guest';
   const isStaff = currentUser.role === 'teacher' || currentUser.role === 'admin';
 
   // Guests get the login modal; signed-in users go straight into the platform.
   const login = () => {
-    setMenuOpen(false);
     if (isGuest) onOpenAuth();
     else onNavigate(isStaff ? 'admin' : 'videos');
   };
-  const loginLabel = isGuest ? 'تسجيل الدخول' : 'دخول المنصة';
-
-  const go = (id: string) => {
-    setMenuOpen(false);
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
-  };
-  const tab = (t: Tab) => { setMenuOpen(false); onNavigate(t); };
-
-  const links: { label: string; run: () => void }[] = [
-    { label: 'نبذة عن المنصة', run: () => go('lp-about') },
-    { label: 'شروحات مرئية', run: () => go('lp-visual') },
-    { label: 'المتفوقون', run: () => go('lp-students') },
-    { label: 'الفيديوهات', run: () => tab('videos') },
-    { label: 'الامتحانات', run: () => tab('exams') },
-    ...(isStaff ? [{ label: 'لوحة المدرس', run: () => tab('admin') }] : []),
-  ];
+  const go = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
 
   return (
     <div className="lp">
-      <header className="nav">
-        <div className="wrap nav-in">
-          <button className="brand" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="منصة الجمل — أعلى الصفحة">
-            <img src={`${IMG}/logo.png`} alt="منصة عبد اللطيف الجمل — Biology" className="brand-logo" />
-          </button>
-          <nav className="nav-links" aria-label="التنقل الرئيسي">
-            {links.map(l => <button key={l.label} onClick={l.run}>{l.label}</button>)}
-          </nav>
-          <div className="nav-actions" style={{ marginInlineStart: 'auto' }}>
-            <button className="icon-btn" onClick={onToggleTheme} aria-label="تبديل وضع الإضاءة">
-              {isDark ? <Sun /> : <Moon />}
-            </button>
-            {!isGuest && <button className="btn btn-ghost hide-sm" onClick={() => tab('account')}>حسابي</button>}
-            <button className="btn btn-primary" onClick={login}>
-              <LogIn style={{ width: 18, height: 18 }} />{loginLabel}
-            </button>
-            <button className="icon-btn menu-toggle" onClick={() => setMenuOpen(o => !o)} aria-label="القائمة" aria-expanded={menuOpen}>
-              {menuOpen ? <X /> : <Menu />}
-            </button>
-          </div>
-        </div>
-        <div className={`mobile-menu wrap${menuOpen ? ' open' : ''}`}>
-          {links.map(l => <button key={l.label} onClick={l.run}>{l.label}</button>)}
-          {!isGuest && <button onClick={() => tab('account')}>حسابي ودرجاتي</button>}
-        </div>
-      </header>
-
       <section className="hero">
         <svg className="dots" viewBox="0 0 800 600" preserveAspectRatio="xMidYMin slice" aria-hidden="true">
           <g fill="var(--hero-dot)">
@@ -174,25 +128,6 @@ export function LandingPage({ currentUser, onOpenAuth, onNavigate, isDark, onTog
         </div>
       </section>
 
-      <footer>
-        <div className="wrap foot">
-          <div>
-            <img src={`${IMG}/logo.png`} alt="منصة عبد اللطيف الجمل — Biology" className="brand-logo" style={{ height: 64 }} />
-            <p>منصة الأستاذ عبد اللطيف الجمل — متخصصة في تدريس الأحياء لطلاب الثانوية العامة بأسلوب حديث وممتع.</p>
-          </div>
-          <div><h4>روابط</h4><ul>
-            <li><button onClick={() => go('lp-about')}>نبذة عن المنصة</button></li>
-            <li><button onClick={() => go('lp-visual')}>شروحات مرئية</button></li>
-            <li><button onClick={() => go('lp-students')}>المتفوقون</button></li>
-          </ul></div>
-          <div><h4>المنصة</h4><ul>
-            <li><button onClick={login}>{loginLabel}</button></li>
-            <li><button onClick={() => tab('videos')}>الفيديوهات والدروس</button></li>
-            <li><button onClick={() => tab('exams')}>بنك الامتحانات</button></li>
-          </ul></div>
-        </div>
-        <div className="copy">© {new Date().getFullYear()} منصة الأستاذ عبد اللطيف الجمل — جميع الحقوق محفوظة.</div>
-      </footer>
     </div>
   );
 }

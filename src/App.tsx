@@ -14,14 +14,13 @@ import {
   saveStoredTheme,
 } from './utils/storage';
 import { mockTeacher } from './data/mockData';
-import { Header } from './components/Header';
+import { SiteHeader, SiteFooter, PageBanner } from './components/SiteChrome';
 import { LandingPage } from './components/LandingPage';
 import { TeacherProfileView } from './components/TeacherProfileView';
 import { VideosPageView } from './components/VideosPageView';
 import { QuizEngineModal } from './components/QuizEngineModal';
 import { AuthModal } from './components/AuthModal';
 import { AdminPanel } from './components/AdminPanel';
-import { Footer } from './components/Footer';
 import {
   BookOpen,
   Sparkles,
@@ -39,7 +38,11 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'home' | 'teacher' | 'videos' | 'exams' | 'admin' | 'account'>('home');
   const [currentUser, setCurrentUser] = useState<User>(() => currentAuthUser());
   useEffect(() => {
-    const sync = () => setCurrentUser(currentAuthUser());
+    const sync = () => {
+      const u = currentAuthUser();
+      setCurrentUser(u);
+      if (u.id === 'guest') setActiveTab(t => (t === 'account' || t === 'admin' ? 'home' : t));
+    };
     window.addEventListener(AUTH_CHANGED, sync);
     void refreshIdentity();
     return () => window.removeEventListener(AUTH_CHANGED, sync);
@@ -88,30 +91,25 @@ export default function App() {
   return (
     <div className={`min-h-screen flex flex-col ${isDark ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'} transition-colors`}>
       
-      {/* 1. Header (Top Bar Contract) — the landing page on the home tab has its own */}
-      {activeTab !== 'home' && <Header
+      {/* 1. Site header — same on every page */}
+      <SiteHeader
         activeTab={activeTab}
-        setActiveTab={tab => {
-          setActiveTab(tab);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
         currentUser={currentUser}
+        onNavigate={goTo}
         onOpenAuth={() => setShowAuthModal(true)}
         isDark={isDark}
         onToggleTheme={toggleTheme}
-      />}
+      />
 
       {/* 2. Main Page Views */}
       <main className="flex-1">
         {catalogError&&activeTab!=='home'&&<p role="alert" className="p-4">{catalogError}</p>}
-        {activeTab==='account'&&currentUser.id!=='guest'&&<StudentDashboard user={currentUser}/>}
+        {activeTab==='account'&&currentUser.id!=='guest'&&<StudentDashboard user={currentUser} onNavigate={goTo}/>}
         {activeTab === 'home' && (
           <LandingPage
             currentUser={currentUser}
             onOpenAuth={() => setShowAuthModal(true)}
             onNavigate={goTo}
-            isDark={isDark}
-            onToggleTheme={toggleTheme}
           />
         )}
 
@@ -125,6 +123,7 @@ export default function App() {
         )}
 
         {/* 3. Videos Page View (Bassthalk format) */}
+        {activeTab === 'videos' && <PageBanner eyebrow="دروسك في مكان واحد" title="الفيديوهات والدروس" text="شروحات المنهج كاملة بالترتيب، مع كويز بعد كل درس." />}
         {activeTab === 'videos' && (
           <VideosPageView
             onSignIn={() => setShowAuthModal(true)}
@@ -135,23 +134,9 @@ export default function App() {
         )}
 
         {/* 4. Exams & Quizzes Bank */}
+        {activeTab === 'exams' && <PageBanner eyebrow="اختبر نفسك" title="بنك الامتحانات والكويزات" text="كويزات فصول المنهج وامتحانات تجريبية مطابقة للثانوية العامة، بتصحيح فوري." side={<span className="sx-chip">{allQuizzes.length} امتحانات متوفرة</span>} />}
         {activeTab === 'exams' && (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-6">
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mb-2">
-                  بنك الامتحانات الشاملة والكويزات
-                </h1>
-                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
-                  اختبر مستواك الآن في كويزات فصول المنهج والامتحانات التجريبية المطابقة للثانوية العامة.
-                </p>
-              </div>
-
-              <span className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800 self-start md:self-auto">
-                {allQuizzes.length} امتحانات متوفرة
-              </span>
-            </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {quizzesError && <p role="alert">{quizzesError}</p>}
               {!quizzesError && allQuizzes.length === 0 && <p>لم ينشر المعلم امتحانات بعد.</p>}
@@ -208,6 +193,7 @@ export default function App() {
         )}
 
         {/* 5. Admin & Teacher Control Panel (Protected by Admin Gate) */}
+        {activeTab === 'admin' && <PageBanner eyebrow="للمعلم والإدارة" title="لوحة تحكم المدرس" text="الطلاب والحضور والامتحانات والتصحيح والكورسات." />}
         {activeTab === 'admin' && (
           currentUser.role === 'teacher' || currentUser.role === 'admin' ? (
             <AdminPanel
@@ -251,13 +237,8 @@ export default function App() {
         )}
       </main>
 
-      {/* 3. Footer — hidden on the landing page, which has its own */}
-      {activeTab !== 'home' && <Footer
-        onNavigate={tab => {
-          setActiveTab(tab);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
-      />}
+      {/* 3. Site footer — same on every page */}
+      <SiteFooter activeTab={activeTab} currentUser={currentUser} onNavigate={goTo} onOpenAuth={() => setShowAuthModal(true)} />
 
       {/* 4. Active Quiz Engine Modal */}
       {currentQuiz && (

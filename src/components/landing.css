@@ -1,20 +1,23 @@
 /* Landing page (home tab). Scoped under .lp; dark mode follows the app's html.dark class. */
-.lp{
+:root{
   --bg:#f5f8f7; --surface:#ffffff; --surface-2:#eef4f2; --line:#dde7e3;
   --ink:#0f1b24; --ink-soft:#4c5a62;
   --emerald:#10b981; --emerald-deep:#059669; --emerald-ink:#065f46;
   --gold:#f59e0b; --gold-deep:#d97706; --sky:#0ea5e9;
   --hero-top:#ffffff; --hero-dot:#cfe9df; --on-dark:#eafff6; --on-dark-soft:#a7d8c6;
-  direction:rtl; background:var(--bg); color:var(--ink);
-  font-family:"Tajawal","Cairo",system-ui,sans-serif; line-height:1.7; -webkit-font-smoothing:antialiased;
-  min-height:100vh;
+  --band-1:#06201a; --band-2:#07372b;
 }
-.dark .lp{
+:root.dark{
   --bg:#070c12; --surface:#0d1620; --surface-2:#111f2b; --line:#1d2d39;
   --ink:#eaf3f1; --ink-soft:#9fb3b0;
   --emerald:#2dd4a7; --emerald-deep:#10b981; --emerald-ink:#86efd0;
   --gold:#fbbf24; --gold-deep:#f59e0b; --sky:#38bdf8;
   --hero-top:#0b1420; --hero-dot:#16302a;
+  --band-1:#04130f; --band-2:#062319;
+}
+.lp{
+  direction:rtl; background:var(--bg); color:var(--ink);
+  font-family:"Tajawal","Cairo",system-ui,sans-serif; line-height:1.7; -webkit-font-smoothing:antialiased;
 }
 .lp *{box-sizing:border-box}
 .lp h1,.lp h2,.lp h3,.lp h4{font-family:"Cairo","Tajawal",system-ui,sans-serif; text-wrap:balance; margin:0}

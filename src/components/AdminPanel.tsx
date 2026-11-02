@@ -186,9 +186,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSelectQuiz, onExitAdmi
               <span className="px-2.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800 text-xs font-bold">
                 لوحة المدرس والأدمن (منطقة مقيدة)
               </span>
-              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
+              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
                 إدارة المنصة والطلاب
-              </h1>
+              </h2>
             </div>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
               تسجيل الحضور والغياب للطلاب، إضافة وتعديل الامتحانات، ومتابعة أولياء الأمور.
