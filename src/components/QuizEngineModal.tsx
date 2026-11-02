@@ -61,7 +61,7 @@ export const QuizEngineModal: React.FC<QuizEngineModalProps> = ({
   }, [isSubmitted]);
 
   const handleSelectOption = (questionId: string, option: string) => {
-    if (isSubmitted) return;
+    if (isSubmitted || busyRef.current) return;
     setAnswers(prev => ({
       ...prev,
       [questionId]: option,
@@ -69,7 +69,7 @@ export const QuizEngineModal: React.FC<QuizEngineModalProps> = ({
   };
 
   const handleEssayChange = (questionId: string, text: string) => {
-    if (isSubmitted) return;
+    if (isSubmitted || busyRef.current) return;
     setAnswers(prev => ({
       ...prev,
       [questionId]: text,
@@ -78,7 +78,7 @@ export const QuizEngineModal: React.FC<QuizEngineModalProps> = ({
 
   const handleSubmitExam = async () => {
     if(busyRef.current)return;busyRef.current=true;setSubmitting(true);setSubmitError('');
-    try{const calc:SavedAttempt=await databaseRequest('rpc/submit_platform_quiz','POST',{quiz_id:quiz.id,answers:answersRef.current,attempt_id:attemptId.current});setResult(calc);setIsSubmitted(true);window.dispatchEvent(new Event('attempts_changed'));if(calc.isPassed)try{confetti({particleCount:80,spread:70,origin:{y:0.6}});}catch{}}
+    try{const calc:SavedAttempt=await databaseRequest('rpc/submit_platform_quiz','POST',{quiz_id:quiz.id,answers:answersRef.current,attempt_id:attemptId.current});setAnswers(calc.answers);setResult(calc);setIsSubmitted(true);window.dispatchEvent(new Event('attempts_changed'));if(calc.isPassed)try{confetti({particleCount:80,spread:70,origin:{y:0.6}});}catch{}}
     catch(e){setSubmitError((e as Error).message);}finally{busyRef.current=false;setSubmitting(false);}
   };
 
