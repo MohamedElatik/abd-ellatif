@@ -14,7 +14,7 @@ const LABEL: Record<AttendanceStatus, string> = { present: 'حاضر', late: 'م
 const today = () => new Date().toLocaleDateString('en-CA');
 const SESSION_KEY = 'biomaster_attendance_session';
 
-function savedSession(): { title: string; date: string } {
+export function savedSession(): { title: string; date: string } {
   try {
     const s = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
     if (s && typeof s.title === 'string' && s.date === today()) return s;
@@ -23,9 +23,21 @@ function savedSession(): { title: string; date: string } {
 }
 
 /** Attendance by the 6-digit code students write on their notebooks. Used by the secretary and the teacher. */
-export function CodeAttendance() {
-  const [title, setTitle] = useState(() => savedSession().title);
-  const [date, setDate] = useState(() => savedSession().date);
+export function CodeAttendance({ session, onSessionChange, onRowsChange, revision = 0 }: {
+  session?: { title: string; date: string };
+  onSessionChange?: (session: { title: string; date: string }) => void;
+  onRowsChange?: (rows: AttendanceRecord[], session: { title: string; date: string }) => void;
+  revision?: number;
+} = {}) {
+  const [localTitle, setLocalTitle] = useState(() => savedSession().title);
+  const [localDate, setLocalDate] = useState(() => savedSession().date);
+  const title = session?.title ?? localTitle;
+  const date = session?.date ?? localDate;
+  const setTitle = (title: string) => onSessionChange ? onSessionChange({ title, date }) : setLocalTitle(title);
+  const setDate = (date: string) => onSessionChange ? onSessionChange({ title, date }) : setLocalDate(date);
+  const request = useRef(0);
+  const notify = useRef(onRowsChange);
+  notify.current = onRowsChange;
   const [status, setStatus] = useState<AttendanceStatus>('present');
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
@@ -38,11 +50,16 @@ export function CodeAttendance() {
   useEffect(() => { try { localStorage.setItem(SESSION_KEY, JSON.stringify({ title, date })); } catch { /* ignore */ } }, [title, date]);
 
   async function reload() {
+    const ticket = ++request.current;
     if (!ready) { setRows([]); return; }
-    try { setRows(await listSessionAttendance(title, date)); setListError(''); }
-    catch (e) { setListError((e as Error).message); }
+    try {
+      const rows = await listSessionAttendance(title, date);
+      if (ticket !== request.current) return;
+      setRows(rows); notify.current?.(rows, { title, date }); setListError('');
+    }
+    catch (e) { if (ticket === request.current) setListError((e as Error).message); }
   }
-  useEffect(() => { const t = setTimeout(reload, 300); return () => clearTimeout(t); }, [title, date]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { const t = setTimeout(reload, 300); return () => { clearTimeout(t); request.current++; }; }, [title, date, revision]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function submit(value = code, as: AttendanceStatus = status) {
     const clean = value.replace(/\D/g, '');
@@ -52,7 +69,9 @@ export function CodeAttendance() {
       const r = await recordAttendanceByCode(clean, title, date, as);
       if (r.status === 'saved') {
         setFlash({ ok: true, title: r.record.studentName, text: `${LABEL[r.record.status]} — كود ${clean}` });
+        request.current++;
         setRows(prev => [r.record, ...prev.filter(x => x.id !== r.record.id)]);
+        await reload();
       } else {
         setFlash({ ok: false, title: 'الكود غير صحيح', text: `مفيش طالب بالكود ${clean}. راجع الرقم المكتوب على المذكرة.` });
       }
@@ -135,3 +154,4 @@ export function CodeAttendance() {
     </section>
   );
 }
+

@@ -8,7 +8,7 @@ import { CourseManager } from './CourseManager';
 import { useAttempts, saveAttendance } from '../utils/records';
 import { databaseRequest } from '../utils/quizzes';
 import { ResultsManager } from './ResultsManager';
-import { CodeAttendance } from './CodeAttendance';
+import { CodeAttendance, savedSession } from './CodeAttendance';
 import { SecretaryManager } from './SecretaryManager';
 import { ConfirmDelete } from './ConfirmDelete';
 import { deleteStudent } from '../utils/admin';
@@ -68,8 +68,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSelectQuiz, onExitAdmi
   // Filter states
   const [selectedGrade, setSelectedGrade] = useState<GradeLevel | 'all'>('sec3');
   const [searchStudent, setSearchStudent] = useState<string>('');
-  const [currentSessionTitle, setCurrentSessionTitle] = useState<string>('حصة 2: الهيكل المحوري وعظام القفص الصدري');
-  const [currentSessionDate, setCurrentSessionDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [currentSessionTitle, setCurrentSessionTitle] = useState<string>(() => savedSession().title);
+  const [currentSessionDate, setCurrentSessionDate] = useState<string>(() => savedSession().date);
+
+  const [attendanceRevision, setAttendanceRevision] = useState(0);
 
   // Quiz creation modal state
   const [showAddQuizModal, setShowAddQuizModal] = useState<boolean>(false);
@@ -119,7 +121,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSelectQuiz, onExitAdmi
     }
 
     const record=updated.find(r=>r.studentId===student.id && r.date===currentSessionDate && r.sessionTitle===currentSessionTitle)!;
-    try{await saveAttendance(record);setAttendanceRecords(prev=>[record,...prev.filter(r=>r.id!==record.id)]);setRecordsError('');}catch(e){setRecordsError((e as Error).message);}
+    try{await saveAttendance(record);setAttendanceRevision(n=>n+1);setAttendanceRecords(prev=>[record,...prev.filter(r=>r.id!==record.id)]);setRecordsError('');}catch(e){setRecordsError((e as Error).message);}
   };
 
   const getStudentStatusForSession = (studentId: string): AttendanceStatus | 'unrecorded' => {
@@ -313,7 +315,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSelectQuiz, onExitAdmi
             <div>
               <h3 className="text-xl font-black mb-1">تسجيل سريع بكود الطالب</h3>
               <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">نفس الصفحة اللي بيستخدمها السكرتير. أو استخدم الجدول تحت لتسجيل كل طالب بالاسم.</p>
-              <CodeAttendance />
+              <CodeAttendance
+                session={{ title: currentSessionTitle, date: currentSessionDate }}
+                onSessionChange={s => { setCurrentSessionTitle(s.title); setCurrentSessionDate(s.date); }}
+                revision={attendanceRevision}
+                onRowsChange={(rows, session) => setAttendanceRecords(prev => [...rows, ...prev.filter(r => r.sessionTitle !== session.title.trim() || r.date !== session.date)])}
+              />
             </div>
             
             {/* Session Settings & Filters */}
@@ -724,3 +731,4 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSelectQuiz, onExitAdmi
     </div>
   );
 };
+
