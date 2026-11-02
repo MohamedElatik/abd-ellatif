@@ -11,5 +11,5 @@ export function useCatalog() {
     }catch{if(alive)setError('تعذر تحميل الكورسات. أعد المحاولة.');}}
     void load();const timer=setInterval(load,30000);window.addEventListener('catalog_changed',load);window.addEventListener('focus',load);
     return()=>{alive=false;clearInterval(timer);window.removeEventListener('catalog_changed',load);window.removeEventListener('focus',load);};
-  },[]);return {courses,lectures,error};
+  },[]);return {courses:courses.map(c=>({...c,totalLectures:lectures.filter(l=>l.courseId===c.id).length})),lectures,error};
 }

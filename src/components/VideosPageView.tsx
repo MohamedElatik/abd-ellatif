@@ -38,7 +38,8 @@ export const VideosPageView: React.FC<VideosPageViewProps> = ({
   const [selectedGrade, setSelectedGrade] = useState<GradeLevel | 'all'>('sec3');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [activeVideo,setActiveVideo]=useState<Lecture|null>(null);
-  useEffect(()=>{if(selectedLectureId)setActiveVideo(mockLectures.find(l=>l.id===selectedLectureId)||null);},[selectedLectureId,mockLectures]);
+  const selectedApplied=useRef<string|undefined>(undefined);
+  useEffect(()=>{if(!selectedLectureId){selectedApplied.current=undefined;return;}if(selectedApplied.current===selectedLectureId)return;const lecture=mockLectures.find(l=>l.id===selectedLectureId);if(lecture){setActiveVideo(lecture);selectedApplied.current=selectedLectureId;}},[selectedLectureId,mockLectures]);
 
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
   const videoRef = useRef<HTMLVideoElement>(null);
