@@ -5,7 +5,7 @@ import { signOut } from '../utils/auth';
 import { useAvatar, initialOf } from '../utils/profile';
 import './site.css';
 
-export type Tab = 'home' | 'teacher' | 'videos' | 'exams' | 'admin' | 'account';
+export type Tab = 'home' | 'videos' | 'exams' | 'admin' | 'account' | 'attendance';
 export const LOGO = `${import.meta.env.BASE_URL}landing/logo.png`;
 
 /** Scrolls to a landing-page section, switching to the home tab first when needed. */
@@ -39,16 +39,18 @@ export function SiteHeader({ activeTab, currentUser, onNavigate, onOpenAuth, isD
   const [open, setOpen] = useState(false);
   const isGuest = currentUser.id === 'guest';
   const isStaff = currentUser.role === 'teacher' || currentUser.role === 'admin';
+  const isSecretary = currentUser.role === 'secretary';
   const section = useSectionNav(activeTab, onNavigate);
   const go = (t: Tab) => { setOpen(false); onNavigate(t); };
+  const myPage: Tab = isSecretary ? 'attendance' : 'account';
 
   const links: { label: string; tab?: Tab; section?: string }[] = [
     { label: 'الرئيسية', tab: 'home' },
-    { label: 'صفحة المدرس', tab: 'teacher' },
     { label: 'الفيديوهات', tab: 'videos' },
     { label: 'الامتحانات', tab: 'exams' },
     { label: 'المتفوقون', section: 'lp-students' },
     ...(isStaff ? [{ label: 'لوحة المدرس', tab: 'admin' as Tab }] : []),
+    ...(isSecretary || isStaff ? [{ label: 'تسجيل الغياب', tab: 'attendance' as Tab }] : []),
   ];
   const renderLinks = () => links.map(l => (
     <button key={l.label} className="sx-link" aria-current={l.tab && l.tab === activeTab ? 'page' : undefined}
@@ -59,6 +61,7 @@ export function SiteHeader({ activeTab, currentUser, onNavigate, onOpenAuth, isD
 
   return (
     <header className="sx-header">
+      {isSecretary && <div className="sx-staff">وضع السكرتير — تسجيل الحضور والغياب بالكود ({currentUser.name})</div>}
       {isStaff && <div className="sx-staff"><ShieldCheck style={{ width: 14, height: 14, display: 'inline', verticalAlign: '-2px' }} /> وضع المعلم مفعّل — {currentUser.name}</div>}
       <div className="sx-wrap sx-nav">
         <button className="sx-brand" onClick={() => go('home')} aria-label="الصفحة الرئيسية">
@@ -72,7 +75,7 @@ export function SiteHeader({ activeTab, currentUser, onNavigate, onOpenAuth, isD
           {isGuest ? (
             <button className="sx-btn sx-btn-primary" onClick={onOpenAuth}><LogIn />تسجيل الدخول</button>
           ) : (
-            <button className="sx-avatar-btn" onClick={() => go('account')} aria-label={`لوحتي — ${currentUser.name}`} title="لوحتي ودرجاتي">
+            <button className="sx-avatar-btn" onClick={() => go(myPage)} aria-label={`${isSecretary ? 'تسجيل الغياب' : 'لوحتي'} — ${currentUser.name}`} title={isSecretary ? 'تسجيل الغياب' : 'لوحتي ودرجاتي'}>
               <Avatar user={currentUser} size={42} />
               <span className="sx-dot" aria-hidden="true" />
             </button>
@@ -84,7 +87,7 @@ export function SiteHeader({ activeTab, currentUser, onNavigate, onOpenAuth, isD
       </div>
       <div className={`sx-wrap sx-mobile${open ? ' open' : ''}`}>
         {renderLinks()}
-        {!isGuest && <button className="sx-link" onClick={() => go('account')}>لوحتي ودرجاتي</button>}
+        {!isGuest && !isSecretary && <button className="sx-link" onClick={() => go('account')}>لوحتي ودرجاتي</button>}
         {!isGuest && <button className="sx-link" onClick={() => { setOpen(false); void signOut(); }}>تسجيل الخروج</button>}
       </div>
     </header>
@@ -109,17 +112,20 @@ export function PageBanner({ eyebrow, title, text, side }: { eyebrow: string; ti
 export function SiteFooter({ activeTab, currentUser, onNavigate, onOpenAuth }: { activeTab: Tab; currentUser: User; onNavigate: (t: Tab) => void; onOpenAuth: () => void }) {
   const section = useSectionNav(activeTab, onNavigate);
   const isGuest = currentUser.id === 'guest';
+  const isSecretary = currentUser.role === 'secretary';
   return (
     <footer className="sx-footer">
       <div className="sx-wrap">
         <div className="sx-foot-cta">
           <div>
             <h3>{isGuest ? 'ابدأ رحلتك مع الأحياء الآن' : `أهلًا ${currentUser.name.split(' ')[0]} 👋`}</h3>
-            <p>{isGuest ? 'سجّل دخولك وتابع دروسك وامتحاناتك من مكان واحد.' : 'كمّل دروسك وتابع درجاتك من لوحتك.'}</p>
+            <p>{isGuest ? 'سجّل دخولك وتابع دروسك وامتحاناتك من مكان واحد.' : isSecretary ? 'سجّل حضور الطلاب بالكود من صفحة الغياب.' : 'كمّل دروسك وتابع درجاتك من لوحتك.'}</p>
           </div>
           {isGuest
             ? <button className="sx-btn sx-btn-gold" onClick={onOpenAuth}><LogIn />تسجيل الدخول</button>
-            : <button className="sx-btn sx-btn-gold" onClick={() => onNavigate('account')}>لوحتي ودرجاتي</button>}
+            : isSecretary
+              ? <button className="sx-btn sx-btn-gold" onClick={() => onNavigate('attendance')}>تسجيل الغياب</button>
+              : <button className="sx-btn sx-btn-gold" onClick={() => onNavigate('account')}>لوحتي ودرجاتي</button>}
         </div>
         <div className="sx-foot">
           <div>
@@ -128,7 +134,6 @@ export function SiteFooter({ activeTab, currentUser, onNavigate, onOpenAuth }: {
           </div>
           <div><h4>المنصة</h4><ul>
             <li><button onClick={() => onNavigate('home')}>الرئيسية</button></li>
-            <li><button onClick={() => onNavigate('teacher')}>صفحة المدرس</button></li>
             <li><button onClick={() => onNavigate('videos')}>الفيديوهات والدروس</button></li>
             <li><button onClick={() => onNavigate('exams')}>بنك الامتحانات</button></li>
           </ul></div>

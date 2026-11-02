@@ -16,7 +16,8 @@ import {
 import { mockTeacher } from './data/mockData';
 import { SiteHeader, SiteFooter, PageBanner } from './components/SiteChrome';
 import { LandingPage } from './components/LandingPage';
-import { TeacherProfileView } from './components/TeacherProfileView';
+import { CodeAttendance } from './components/CodeAttendance';
+
 import { VideosPageView } from './components/VideosPageView';
 import { QuizEngineModal } from './components/QuizEngineModal';
 import { AuthModal } from './components/AuthModal';
@@ -35,13 +36,13 @@ import {
 
 export default function App() {
   const {courses:mockCourses,lectures:mockLectures,error:catalogError}=useCatalog();
-  const [activeTab, setActiveTab] = useState<'home' | 'teacher' | 'videos' | 'exams' | 'admin' | 'account'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'videos' | 'exams' | 'admin' | 'account' | 'attendance'>('home');
   const [currentUser, setCurrentUser] = useState<User>(() => currentAuthUser());
   useEffect(() => {
     const sync = () => {
       const u = currentAuthUser();
       setCurrentUser(u);
-      if (u.id === 'guest') setActiveTab(t => (t === 'account' || t === 'admin' ? 'home' : t));
+      if (u.id === 'guest') setActiveTab(t => (t === 'account' || t === 'admin' || t === 'attendance' ? 'home' : t));
     };
     window.addEventListener(AUTH_CHANGED, sync);
     void refreshIdentity();
@@ -110,15 +111,6 @@ export default function App() {
             currentUser={currentUser}
             onOpenAuth={() => setShowAuthModal(true)}
             onNavigate={goTo}
-          />
-        )}
-
-        {/* 2. Teacher Profile View (Bassthalk teacher/3 format) */}
-        {activeTab === 'teacher' && (
-          <TeacherProfileView
-            teacher={mockTeacher}
-            onSelectLecture={handleSelectLecture}
-            onSelectQuiz={handleStartQuiz}
           />
         )}
 
@@ -193,6 +185,18 @@ export default function App() {
         )}
 
         {/* 5. Admin & Teacher Control Panel (Protected by Admin Gate) */}
+        {activeTab === 'attendance' && <PageBanner eyebrow="السكرتارية" title="تسجيل الحضور والغياب" text="اكتب كود الطالب المكتوب على مذكرته، وهيتسجل على طول." />}
+        {activeTab === 'attendance' && (
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+            {currentUser.role === 'secretary' || currentUser.role === 'admin' || currentUser.role === 'teacher'
+              ? <CodeAttendance />
+              : <div className="sx-card" style={{ textAlign: 'center' }}>
+                  <p className="mb-4">الصفحة دي للسكرتير والمعلم بس.</p>
+                  <button className="sx-btn sx-btn-primary" onClick={() => setShowAuthModal(true)}>تسجيل الدخول</button>
+                </div>}
+          </div>
+        )}
+
         {activeTab === 'admin' && <PageBanner eyebrow="للمعلم والإدارة" title="لوحة تحكم المدرس" text="الطلاب والحضور والامتحانات والتصحيح والكورسات." />}
         {activeTab === 'admin' && (
           currentUser.role === 'teacher' || currentUser.role === 'admin' ? (
@@ -218,7 +222,7 @@ export default function App() {
                 </div>
 
                 <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400">
-                  تفعيل اشتراكات الفيديو يتم بواسطة إدارة المنصة.
+                  الفيديوهات متاحة للجميع دون اشتراك.
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
@@ -258,7 +262,7 @@ export default function App() {
             setCurrentUser(u);
             // Signing in from the landing page takes the user into the platform.
             if (activeTab === 'home' && u.id !== 'guest') {
-              goTo(u.role === 'teacher' || u.role === 'admin' ? 'admin' : 'videos');
+              goTo(u.role === 'teacher' || u.role === 'admin' ? 'admin' : u.role === 'secretary' ? 'attendance' : 'videos');
             }
           }}
         />

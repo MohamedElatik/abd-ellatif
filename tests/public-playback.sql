@@ -1,0 +1,24 @@
+begin;
+insert into public.platform_courses(id,document,price) values('public_test_course','{"id":"public_test_course","grade":"sec3","title":"test"}',0);
+insert into public.platform_lectures(id,course_id,document) values('public_test_lesson','public_test_course','{"id":"public_test_lesson","courseId":"public_test_course","grade":"sec3","playbackProvider":"vdocipher"}');
+insert into public.video_lessons(lecture_id,course_id,video_id,published) values('public_test_lesson','public_test_course','12345678901234567890123456789012',true);
+set local role anon;
+do $$declare result jsonb;begin
+result:=public.authorize_public_video_playback('public_test_lesson');
+if result->>'status'<>'allowed' then raise exception 'Guest playback denied';end if;
+if public.authorize_public_video_playback('lec_1')->>'status'<>'denied' then raise exception 'Archived lesson allowed';end if;
+if public.authorize_public_video_playback('missing')->>'status'<>'denied' then raise exception 'Missing lesson allowed';end if;
+begin perform public.save_platform_course('{"id":"guest","grade":"sec3","title":"bad"}');raise exception 'Guest wrote course';exception when insufficient_privilege then null;end;
+if has_table_privilege('anon','public.platform_attempts','select') or has_table_privilege('anon','public.video_lessons','select') then raise exception 'Private data exposed';end if;
+end $$;
+reset role;
+update public.platform_courses set published=false where id='public_test_course';
+set local role anon;
+do $$begin if public.authorize_public_video_playback('public_test_lesson')->>'status'<>'denied' then raise exception 'Archived course allowed';end if;end $$;
+reset role;
+update public.platform_courses set published=true where id='public_test_course';
+update video_private.public_playback_limits set requests=120 where scope='lecture:public_test_lesson';
+set local role anon;
+do $$begin if public.authorize_public_video_playback('public_test_lesson')->>'status'<>'rate_limited' then raise exception 'No shared rate limit';end if;end $$;
+reset role;
+rollback;

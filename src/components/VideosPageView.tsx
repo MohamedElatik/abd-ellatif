@@ -82,7 +82,8 @@ export const VideosPageView: React.FC<VideosPageViewProps> = ({
           </div>
         </div>
 
-        {error&&<p role="alert">{error}</p>}<label>الكورس<select className="p-3 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700 mx-3" value={courseFilter} onChange={e=>setCourseFilter(e.target.value)}><option value="">كل الكورسات</option>{courses.map(c=><option key={c.id} value={c.id}>{c.title} — {c.isFree?'مجاني':c.price+' ج.م'}</option>)}</select></label>
+        {error&&<p role="alert">{error}</p>}<label>الكورس<select className="p-3 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700 mx-3" value={courseFilter} onChange={e=>setCourseFilter(e.target.value)}><option value="">كل الكورسات</option>{courses.map(c=><option key={c.id} value={c.id}>{c.title} — مجاني</option>)}</select></label>
+        {!error&&mockLectures.length===0&&<p className="p-8 text-center rounded-xl border">لا توجد فيديوهات منشورة حاليًا. ستظهر هنا الكورسات والفيديوهات التي يضيفها المدرس.</p>}
         {/* Grade Selector Tabs (Bassthalk style) */}
         <div className="flex items-center gap-2 overflow-x-auto p-1 bg-white dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-800 w-fit shadow-xs">
           <button
@@ -226,7 +227,7 @@ export const VideosPageView: React.FC<VideosPageViewProps> = ({
                 {/* Free Preview Tag */}
                 {lec.isFreePreview && (
                   <div className="absolute top-2.5 right-2.5 px-2.5 py-0.5 rounded bg-emerald-600 text-[11px] font-bold text-white shadow">
-                    معاينة مجانية
+                    متاح للجميع
                   </div>
                 )}
 

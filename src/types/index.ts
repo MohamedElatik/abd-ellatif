@@ -11,7 +11,7 @@ export interface User {
   email?: string;
   phone: string;
   parentPhone?: string;
-  role: 'student' | 'teacher' | 'admin';
+  role: 'student' | 'teacher' | 'admin' | 'secretary';
   grade?: GradeLevel;
   governorate?: string;
   createdAt: string;

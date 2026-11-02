@@ -67,3 +67,14 @@ test('only server-controlled app metadata grants teacher admin UI',async()=>{
   globalThis.fetch=async()=>Response.json(response.user);await refreshIdentity();assert.equal(currentAuthUser().role,'student');
 });
 
+
+test('only server-controlled app metadata grants the secretary attendance UI',async()=>{
+  clearSession();globalThis.fetch=async()=>Response.json({...response,user:{...response.user,app_metadata:{role:'secretary'}}});
+  assert.equal((await signIn('secretary@example.invalid','abcdef')).role,'secretary');
+  assert.equal(currentAuthUser().role,'secretary');
+  clearSession();
+  values.set('biomaster_verified_session_v1',JSON.stringify({access_token:'forged',expires_at:Date.now()/1000+3600,user:{id:'verified-user',role:'secretary'}}));
+  assert.equal(currentAuthUser().role,'student');
+  clearSession();globalThis.fetch=async()=>Response.json({...response,user:{...response.user,app_metadata:{role:'superuser'}}});
+  assert.equal((await signIn('x@example.invalid','abcdef')).role,'student');
+});

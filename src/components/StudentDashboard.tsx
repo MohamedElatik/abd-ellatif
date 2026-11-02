@@ -3,8 +3,9 @@ import type { User } from '../types';
 import { useAttempts, type SavedAttempt } from '../utils/records';
 import { useAvatar, saveAvatar } from '../utils/profile';
 import { signOut } from '../utils/auth';
+import { useMyAttendanceCode } from '../utils/admin';
 import { Avatar, type Tab } from './SiteChrome';
-import { Camera, ClipboardList, Target, Trophy, TrendingUp, PlayCircle, FileQuestion, LogOut, Sparkles } from 'lucide-react';
+import { Copy, Camera, ClipboardList, Target, Trophy, TrendingUp, PlayCircle, FileQuestion, LogOut, Sparkles } from 'lucide-react';
 
 const GRADES: Record<string, string> = { sec1: 'الأول الثانوي', sec2: 'الثاني الثانوي', sec3: 'الثالث الثانوي' };
 
@@ -42,6 +43,8 @@ export function StudentDashboard({ user, onNavigate }: { user: User; onNavigate:
   const { attempts, error } = useAttempts();
   const { error: avatarError } = useAvatar(user.id);
   const [busy, setBusy] = useState(false);
+  const code = useMyAttendanceCode(user.id);
+  const [copied, setCopied] = useState(false);
   const [message, setMessage] = useState<{ text: string; err?: boolean } | null>(null);
 
   async function upload(file?: File) {
@@ -111,6 +114,19 @@ export function StudentDashboard({ user, onNavigate }: { user: User; onNavigate:
             </div>
           ))}
         </div>
+
+        {code && (
+          <section className="sx-code-card" aria-label="كود الحضور">
+            <div>
+              <h2>كود الحضور بتاعك</h2>
+              <p>اكتب الكود ده على مذكراتك وكشكولك — السكرتير بيسجّل حضورك بيه في كل حصة.</p>
+            </div>
+            <div className="sx-code-digits" aria-label={`الكود ${code.split('').join(' ')}`}>{code.split('').map((d, i) => <span key={i}>{d}</span>)}</div>
+            <button type="button" className="sx-btn" onClick={async () => {
+              try { await navigator.clipboard.writeText(code); setCopied(true); setTimeout(() => setCopied(false), 1800); } catch { /* clipboard blocked */ }
+            }}><Copy />{copied ? 'اتنسخ' : 'نسخ الكود'}</button>
+          </section>
+        )}
 
         {error && <p role="alert" className="sx-alert" style={{ marginTop: '1.2rem' }}>{error}</p>}
 

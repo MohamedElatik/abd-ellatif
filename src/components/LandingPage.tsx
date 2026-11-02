@@ -29,7 +29,7 @@ export function LandingPage({ currentUser, onOpenAuth, onNavigate }: Props) {
   // Guests get the login modal; signed-in users go straight into the platform.
   const login = () => {
     if (isGuest) onOpenAuth();
-    else onNavigate(isStaff ? 'admin' : 'videos');
+    else onNavigate(isStaff ? 'admin' : currentUser.role === 'secretary' ? 'attendance' : 'videos');
   };
   const go = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
 
@@ -47,7 +47,7 @@ export function LandingPage({ currentUser, onOpenAuth, onNavigate }: Props) {
           <h1>عبد اللطيف الجمل</h1>
           <p className="sub">منصة متخصصة في تدريس مادة الأحياء لطلاب الثانوية العامة</p>
           <div className="hero-cta">
-            <button className="btn btn-gold" onClick={login}>{isGuest ? 'سجّل الآن' : 'دخول المنصة'}</button>
+            <button className="btn btn-gold" onClick={() => onNavigate('videos')}>شاهد الفيديوهات مجانًا</button>
             <button className="btn btn-ghost" onClick={() => go('lp-about')}>تعرّف علينا</button>
           </div>
           <div className="photo">

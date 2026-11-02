@@ -8,6 +8,10 @@ import { CourseManager } from './CourseManager';
 import { useAttempts, saveAttendance } from '../utils/records';
 import { databaseRequest } from '../utils/quizzes';
 import { ResultsManager } from './ResultsManager';
+import { CodeAttendance } from './CodeAttendance';
+import { SecretaryManager } from './SecretaryManager';
+import { ConfirmDelete } from './ConfirmDelete';
+import { deleteStudent } from '../utils/admin';
 import { QuestionEditor } from './QuestionEditor';
 import React, { useState, useEffect } from 'react';
 import { fetchRegisteredStudents, RegisteredStudent } from '../utils/students';
@@ -37,7 +41,8 @@ interface AdminPanelProps {
 }
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({ onSelectQuiz, onExitAdmin }) => {
-  const [activeTab, setActiveTab] = useState<'attendance' | 'quizzes' | 'students' | 'courses' | 'results'>('attendance');
+  const [activeTab, setActiveTab] = useState<'attendance' | 'quizzes' | 'students' | 'courses' | 'results' | 'secretaries'>('attendance');
+  const [studentMessage, setStudentMessage] = useState<{ text: string; err?: boolean } | null>(null);
 
   // Dynamic state loaded from persistent storage
   const [students, setStudents] = useState<RegisteredStudent[]>([]);
@@ -264,8 +269,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSelectQuiz, onExitAdmi
         </div>
 
         {(recordsError||attemptsError)&&<p role="alert">{recordsError||attemptsError}</p>}
-        <div className="flex gap-3"><button className="rounded-xl bg-emerald-700 text-white p-3" onClick={()=>setActiveTab('courses')}>إدارة الكورسات والفيديوهات</button><button className="rounded-xl bg-cyan-700 text-white p-3" onClick={()=>setActiveTab('results')}>نتائج الطلاب وتصحيح المقالي</button></div>
-        {activeTab==='courses'&&<CourseManager/>}{activeTab==='results'&&<ResultsManager/>}
+        <div className="flex gap-3"><button className="rounded-xl bg-emerald-700 text-white p-3" onClick={()=>setActiveTab('courses')}>إدارة الكورسات والفيديوهات</button><button className="rounded-xl bg-cyan-700 text-white p-3" onClick={()=>setActiveTab('results')}>نتائج الطلاب وتصحيح المقالي</button><button className="rounded-xl bg-amber-600 text-white p-3" onClick={()=>setActiveTab('secretaries')}>حسابات السكرتارية</button></div>
+        {activeTab==='courses'&&<CourseManager/>}{activeTab==='results'&&<ResultsManager/>}{activeTab==='secretaries'&&<SecretaryManager/>}
         {/* Tab Switcher */}
         <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
           <button
@@ -305,6 +310,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSelectQuiz, onExitAdmi
         {/* TAB 1: ATTENDANCE & ABSENCE TRACKER */}
         {activeTab === 'attendance' && (
           <div className="space-y-6">
+            <div>
+              <h3 className="text-xl font-black mb-1">تسجيل سريع بكود الطالب</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">نفس الصفحة اللي بيستخدمها السكرتير. أو استخدم الجدول تحت لتسجيل كل طالب بالاسم.</p>
+              <CodeAttendance />
+            </div>
             
             {/* Session Settings & Filters */}
             <div className="p-5 rounded-2xl bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-4 shadow-xs">
@@ -545,9 +555,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSelectQuiz, onExitAdmi
         {/* TAB 3: REGISTERED STUDENTS & GRADEBOOK */}
         {activeTab === 'students' && (
           <div className="space-y-4">
-            <div className="rounded-2xl bg-slate-800/80 border border-slate-700 overflow-hidden shadow-lg">
+            {studentMessage && <p role="status" className={studentMessage.err ? 'sx-alert' : 'sx-ok'}>{studentMessage.text}</p>}
+            <div className="rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 overflow-x-auto shadow-lg">
               <table className="w-full text-right text-xs">
-                <thead className="bg-slate-950/80 text-slate-400 font-bold border-b border-slate-700">
+                <thead className="bg-slate-100 dark:bg-slate-950/80 text-slate-600 dark:text-slate-400 font-bold border-b border-slate-200 dark:border-slate-700">
                   <tr>
                     <th className="py-3.5 px-4">كود الطالب</th>
                     <th className="py-3.5 px-4">اسم الطالب</th>
@@ -555,18 +566,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSelectQuiz, onExitAdmi
                     <th className="py-3.5 px-4">الصف والمحافظة</th>
                     <th className="py-3.5 px-4">الامتحانات المكتملة</th>
                     <th className="py-3.5 px-4">تاريخ التسجيل</th>
+                    <th className="py-3.5 px-4">إجراءات</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-700/60">
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-700/60">
                   {students.map(st => (
-                    <tr key={st.id} className="hover:bg-slate-750/50">
-                      <td className="py-3 px-4 font-mono font-bold text-emerald-400">{st.studentCode}</td>
-                      <td className="py-3 px-4 font-semibold text-white">{st.name}<div className="text-xs text-slate-400" dir="ltr">{st.email}</div><div className="text-xs">{st.confirmed ? 'البريد مؤكد' : 'بانتظار تأكيد البريد'} · {st.enrolledCourses.length ? 'اشتراك فعال' : 'بدون اشتراك فعال'}</div></td>
-                      <td className="py-3 px-4 text-slate-300 tabular-nums">
+                    <tr key={st.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/40">
+                      <td className="py-3 px-4 font-mono font-black text-base tracking-widest text-emerald-600 dark:text-emerald-400" dir="ltr">{st.studentCode}</td>
+                      <td className="py-3 px-4 font-semibold text-slate-900 dark:text-white">{st.name}<div className="text-xs text-slate-400" dir="ltr">{st.email}</div><div className="text-xs">{st.confirmed ? 'البريد مؤكد' : 'بانتظار تأكيد البريد'} · {st.enrolledCourses.length ? 'اشتراك فعال' : 'بدون اشتراك فعال'}</div></td>
+                      <td className="py-3 px-4 text-slate-700 dark:text-slate-300 tabular-nums">
                         <div>طالب: {st.phone}</div>
                         <div className="text-[11px] text-slate-400">ولي الأمر: {st.parentPhone || 'غير مسجل'}</div>
                       </td>
-                      <td className="py-3 px-4 text-slate-300">
+                      <td className="py-3 px-4 text-slate-700 dark:text-slate-300">
                         {st.grade === 'sec3' ? 'ثالثة ثانوي' : st.grade === 'sec2' ? 'ثانية ثانوي' : 'أولى ثانوي'}
                         <div className="text-[11px] text-slate-400">{st.governorate || 'غير مسجلة'}</div>
                       </td>
@@ -586,6 +598,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSelectQuiz, onExitAdmi
                         )}
                       </td>
                       <td className="py-3 px-4 text-slate-400 tabular-nums">{st.createdAt}</td>
+                      <td className="py-3 px-4">
+                        <ConfirmDelete label="حذف الحساب" question={`تحذف حساب ${st.name} وكل درجاته وغيابه؟`} onConfirm={async () => {
+                          try {
+                            const r = await deleteStudent(st.id);
+                            if (r === 'deleted') { setStudents(list => list.filter(x => x.id !== st.id)); setStudentMessage({ text: `اتحذف حساب ${st.name}.` }); window.dispatchEvent(new Event('attempts_changed')); }
+                            else setStudentMessage({ text: r === 'not_found' ? 'الحساب ده اتحذف قبل كده.' : 'مينفعش تحذف حساب معلم أو سكرتير من هنا.', err: true });
+                          } catch (e) { setStudentMessage({ text: (e as Error).message, err: true }); }
+                        }} />
+                      </td>
                     </tr>
                   ))}
                 </tbody>

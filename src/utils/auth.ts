@@ -6,7 +6,9 @@ export const AUTH_CHANGED = 'biomaster_auth_changed';
 export const guestUser: User = { id: 'guest', name: 'زائر', phone: '', role: 'student', createdAt: '' };
 interface Session { access_token: string; expires_at: number; user: User }
 let memorySession: Session | null = null;
-let verifiedAdminToken: string | null = null;
+// Staff role verified by the server for one specific access token. Saved browser data can never grant it.
+let verifiedStaff: { token: string; role: 'admin' | 'secretary' } | null = null;
+const roleFor = (token: string): User['role'] => (verifiedStaff?.token === token ? verifiedStaff.role : 'student');
 
 export function readSession(): Session | null {
   try {
@@ -14,16 +16,16 @@ export function readSession(): Session | null {
     const session = saved ? JSON.parse(saved) : memorySession;
     if (session && typeof session.access_token === 'string' && session.expires_at > Date.now() / 1000 + 10) {
       // UI data is presentation only. Every playback request is verified server-side.
-      return { ...session, user: { ...session.user, role: verifiedAdminToken === session.access_token ? 'admin' : 'student' } };
+      return { ...session, user: { ...session.user, role: roleFor(session.access_token) } };
     }
   } catch { /* Private browsing may disable storage. */ }
-  if (memorySession && memorySession.expires_at > Date.now() / 1000 + 10) return { ...memorySession, user: { ...memorySession.user, role: verifiedAdminToken === memorySession.access_token ? 'admin' : 'student' } };
+  if (memorySession && memorySession.expires_at > Date.now() / 1000 + 10) return { ...memorySession, user: { ...memorySession.user, role: roleFor(memorySession.access_token) } };
   return null;
 }
 
 export function clearSession() {
   memorySession = null;
-  verifiedAdminToken = null;
+  verifiedStaff = null;
   try { sessionStorage.removeItem(SESSION_KEY); } catch { /* memory-only session */ }
   window.dispatchEvent(new Event(AUTH_CHANGED));
 }
@@ -44,7 +46,7 @@ export async function refreshIdentity() {
     if (readSession()?.access_token !== session.access_token) return;
     if (user.id !== session.user.id || !user.email_confirmed_at) { clearSession(); return; }
     acceptSession({ access_token: session.access_token, expires_in: Math.max(0, session.expires_at - Date.now() / 1000), user });
-  } catch { verifiedAdminToken = null; window.dispatchEvent(new Event(AUTH_CHANGED)); }
+  } catch { verifiedStaff = null; window.dispatchEvent(new Event(AUTH_CHANGED)); }
 }
 
 async function authRequest(path: string, body: unknown) {
@@ -64,13 +66,15 @@ async function authRequest(path: string, body: unknown) {
 
 function acceptSession(data: any): User | null {
   if (!data.access_token || !data.user?.id || !data.user?.email_confirmed_at) return null;
-  verifiedAdminToken = data.user.app_metadata?.role === 'admin' ? data.access_token : null;
+  const appRole = data.user.app_metadata?.role;
+  const staffRole = appRole === 'admin' || appRole === 'secretary' ? appRole : null;
+  verifiedStaff = staffRole ? { token: data.access_token, role: staffRole } : null;
   const metadata = data.user.user_metadata || {};
   const user: User = {
     id: data.user.id, email: data.user.email, name: metadata.name || 'طالب',
     phone: metadata.phone || '', parentPhone: metadata.parentPhone || '',
     grade: 'sec3',
-    governorate: metadata.governorate || '', role: data.user.app_metadata?.role === 'admin' ? 'admin' : 'student', createdAt: data.user.created_at || '',
+    governorate: metadata.governorate || '', role: staffRole || 'student', createdAt: data.user.created_at || '',
   };
   memorySession = { access_token: data.access_token, expires_at: Date.now() / 1000 + Number(data.expires_in || 3600), user };
   try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(memorySession)); } catch { /* memory-only session */ }
