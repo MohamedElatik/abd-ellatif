@@ -10,6 +10,6 @@ test('successful minimal insert accepts an empty 201 response',async()=>{
  const descriptor=Object.getOwnPropertyDescriptor(globalThis,'sessionStorage');const oldFetch=globalThis.fetch;
  Object.defineProperty(globalThis,'sessionStorage',{configurable:true,value:{getItem:()=>JSON.stringify({access_token:'test',expires_at:Date.now()/1000+1000,user:{id:'test'}})}});
  globalThis.fetch=async()=>new Response(null,{status:201});
- try{assert.equal(await databaseRequest('platform_quizzes','POST',{}),null);}finally{globalThis.fetch=oldFetch;if(descriptor)Object.defineProperty(globalThis,'sessionStorage',descriptor);else delete globalThis.sessionStorage;}
+ try{assert.equal(await databaseRequest('platform_quizzes','POST',{}),null);}finally{globalThis.fetch=oldFetch;if(descriptor)Object.defineProperty(globalThis,'sessionStorage',descriptor);else Reflect.deleteProperty(globalThis,'sessionStorage');}
 });
 
