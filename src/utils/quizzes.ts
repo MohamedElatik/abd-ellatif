@@ -10,7 +10,8 @@ export function quizHeaders() {
 export async function databaseRequest(path: string, method='GET', body?: unknown, prefer='return=minimal') {
   const r=await fetch(`${supabaseUrl}/rest/v1/${path}`,{method,headers:{...quizHeaders(),Prefer:prefer},cache:'no-store',body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(15000)});
   if(!r.ok) throw new Error(r.status===401||r.status===403?'سجّل الدخول بالحساب المخوّل لهذا الإجراء.':'تعذر الحفظ أو التحميل من قاعدة البيانات. حاول مجددًا.');
-  return r.status===204?null:r.json();
+  const content=await r.text();
+  return content ? JSON.parse(content) : null;
 }
 export function validateQuiz(quiz: Quiz) {
   if(!Number.isFinite(quiz.timeLimitMinutes)||quiz.timeLimitMinutes<1||!Number.isFinite(quiz.passingScore)||quiz.passingScore<0||quiz.passingScore>100) throw new Error('راجع مدة الامتحان ونسبة النجاح.');
@@ -45,3 +46,4 @@ export function useQuizzes() {
   },[]);
   return {quizzes,error};
 }
+
