@@ -1,0 +1,36 @@
+begin;
+do $$
+declare a uuid:=gen_random_uuid(); s uuid:=gen_random_uuid(); other_id uuid:=gen_random_uuid(); aid uuid:=gen_random_uuid(); result jsonb; course jsonb; quiz jsonb;
+begin
+insert into auth.users(id,email,email_confirmed_at,raw_app_meta_data) values(a,a::text||'@example.invalid',now(),'{"role":"admin"}');
+insert into auth.sessions(id,user_id) values(s,a);
+perform set_config('request.jwt.claims',jsonb_build_object('sub',a,'role','authenticated','session_id',s)::text,true);
+course:='{"id":"test_course_shared","title":"Test course","grade":"sec3","isFree":true,"price":0}'::jsonb;
+perform public.save_platform_course(course);
+perform public.save_platform_lecture('{"id":"test_lecture_shared","courseId":"test_course_shared","grade":"sec3","title":"Test video"}','12345678901234567890123456789012');
+quiz:='{"id":"test_quiz_shared","title":"Test","grade":"sec3","passingScore":75,"questions":[{"id":"q1","type":"mcq","prompt":"test","options":["a","b"],"correctAnswer":"a","explanation":"private","points":2},{"id":"q2","type":"essay","prompt":"explain","correctAnswer":"key","points":2}]}'::jsonb;
+insert into public.platform_quizzes(id,document) values('test_quiz_shared',quiz);
+update auth.users set raw_app_meta_data='{}',raw_user_meta_data='{"role":"admin"}' where id=a;
+if video_private.is_platform_admin() then raise exception 'metadata role escalation';end if;
+begin perform public.save_platform_course(course);raise exception 'student wrote course';exception when insufficient_privilege then null;end;
+result:=public.list_platform_quizzes();
+if exists(select 1 from jsonb_array_elements(result) x, jsonb_array_elements(x->'questions') q where q?'correctAnswer' or q?'explanation') then raise exception 'answers exposed';end if;
+result:=public.authorize_video_playback('test_lecture_shared');
+if result->>'status'<>'allowed' then raise exception 'free blocked: %',result;end if;
+update public.platform_courses set price=10 where id='test_course_shared';
+result:=public.authorize_video_playback('test_lecture_shared');
+if result->>'status'<>'denied' then raise exception 'paid bypass';end if;
+result:=public.submit_platform_quiz('test_quiz_shared','{"q1":"a","q2":"essay"}',aid);
+if (result->>'score')::int<>2 or not (result->>'pendingReview')::boolean or result->>'studentId'<>a::text then raise exception 'invalid result %',result;end if;
+result:=public.submit_platform_quiz('test_quiz_shared','{"q1":"b"}',aid);
+if (result->>'score')::int<>2 then raise exception 'idempotency failed';end if;
+begin perform public.grade_platform_attempt(aid,'{"q2":2}');raise exception 'student graded';exception when insufficient_privilege then null;end;
+update auth.users set raw_app_meta_data='{"role":"admin"}' where id=a;
+perform public.grade_platform_attempt(aid,'{"q2":2}');
+select document into result from public.platform_attempts where id=aid;
+if (result->>'score')::int<>4 or (result->>'pendingReview')::boolean then raise exception 'grading failed';end if;
+perform set_config('request.jwt.claims',jsonb_build_object('sub',a,'session_id',gen_random_uuid())::text,true);
+begin perform public.save_platform_course(course);raise exception 'revoked session';exception when insufficient_privilege then null;end;
+if has_table_privilege('authenticated','public.platform_attempts','INSERT') or has_column_privilege('authenticated','public.platform_quizzes','document','SELECT') or has_function_privilege('anon','public.submit_platform_quiz(text,jsonb,uuid)','EXECUTE') then raise exception 'excess grants';end if;
+end $$;
+rollback;

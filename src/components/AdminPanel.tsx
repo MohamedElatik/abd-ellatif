@@ -3,15 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { useQuizzes, publishQuiz, archiveQuiz, legacyQuizDrafts } from '../utils/quizzes';
+import { CourseManager } from './CourseManager';
+import { useAttempts, saveAttendance } from '../utils/records';
+import { databaseRequest } from '../utils/quizzes';
+import { ResultsManager } from './ResultsManager';
+import { QuestionEditor } from './QuestionEditor';
 import React, { useState, useEffect } from 'react';
 import { fetchRegisteredStudents, RegisteredStudent } from '../utils/students';
 import { Student, AttendanceRecord, Quiz, Question, GradeLevel, AttendanceStatus } from '../types';
-import {
-  getStoredAttendance,
-  saveStoredAttendance,
-  getStoredQuizzes,
-  saveStoredQuizzes,
-} from '../utils/storage';
+
 import {
   Users,
   CalendarCheck,
@@ -36,7 +37,7 @@ interface AdminPanelProps {
 }
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({ onSelectQuiz, onExitAdmin }) => {
-  const [activeTab, setActiveTab] = useState<'attendance' | 'quizzes' | 'students'>('attendance');
+  const [activeTab, setActiveTab] = useState<'attendance' | 'quizzes' | 'students' | 'courses' | 'results'>('attendance');
 
   // Dynamic state loaded from persistent storage
   const [students, setStudents] = useState<RegisteredStudent[]>([]);
@@ -51,9 +52,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSelectQuiz, onExitAdmi
       .finally(() => { if (!controller.signal.aborted) setStudentsLoading(false); });
     return () => controller.abort();
   }, [reloadStudents]);
-  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>(() => getStoredAttendance());
-  const [quizzes, setQuizzes] = useState<Quiz[]>(() => getStoredQuizzes());
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
+  const { quizzes, error: quizzesError } = useQuizzes();
+  const [quizError,setQuizError]=useState('');
+  const [savingQuiz,setSavingQuiz]=useState(false);
 
+  const {attempts,error:attemptsError}=useAttempts();
+  const [recordsError,setRecordsError]=useState('');
+  useEffect(()=>{let alive=true;databaseRequest('platform_attendance?select=document').then(rows=>{if(alive)setAttendanceRecords(rows.map((r:{document:AttendanceRecord})=>r.document));}).catch(e=>{if(alive)setRecordsError(e.message);});return()=>{alive=false;};},[reloadStudents]);
   // Filter states
   const [selectedGrade, setSelectedGrade] = useState<GradeLevel | 'all'>('sec3');
   const [searchStudent, setSearchStudent] = useState<string>('');
@@ -68,30 +74,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSelectQuiz, onExitAdmi
   const [newQuizDuration, setNewQuizDuration] = useState<number>(20);
   const [newQuizPassing, setNewQuizPassing] = useState<number>(60);
   const [isComprehensive, setIsComprehensive] = useState<boolean>(false);
-  const [newQuestions, setNewQuestions] = useState<Question[]>([
-    {
-      id: 'q_' + Date.now(),
-      type: 'mcq',
-      prompt: 'ما هي الوظيفة الأساسية لخيوط الأكتين في القطعة العضلية؟',
-      options: ['الانزلاق لتوليد قوة الانقباض', 'تخزين الكالسيوم', 'توليد النبض العصبي', 'تثبيت العظم'],
-      correctAnswer: 'الانزلاق لتوليد قوة الانقباض',
-      explanation: 'تنزلق خيوط الأكتين الرفيعة فوق خيوط الميوسين السميكة بواسطة الروابط المستعرضة وبمساعدة ATP وأيونات الكالسيوم.',
-      points: 2,
-    },
-  ]);
+  const [newQuestions, setNewQuestions] = useState<Question[]>([]);
 
   // Calculate high-level metrics
   const totalStudentsCount = students.length;
   const presentCount = attendanceRecords.filter(r => r.status === 'present').length;
   const overallAttendanceRate = attendanceRecords.length > 0
     ? Math.round((presentCount / attendanceRecords.length) * 100)
-    : 92;
+    : 0;
 
   // Handler: Update attendance for a student
-  const handleUpdateAttendance = (student: Student, status: AttendanceStatus) => {
+  const handleUpdateAttendance = async (student: Student, status: AttendanceStatus) => {
     // Check if record exists for this session & student
     const existingIndex = attendanceRecords.findIndex(
-      r => r.studentId === student.id && (r.sessionTitle === currentSessionTitle || r.date === currentSessionDate)
+      r => r.studentId === student.id && (r.sessionTitle === currentSessionTitle && r.date === currentSessionDate)
     );
 
     let updated: AttendanceRecord[];
@@ -104,7 +100,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSelectQuiz, onExitAdmi
       };
     } else {
       const newRec: AttendanceRecord = {
-        id: 'att_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+        id: [student.id,currentSessionDate,currentSessionTitle].join('|'),
         studentId: student.id,
         studentName: student.name,
         studentPhone: student.phone,
@@ -117,29 +113,28 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSelectQuiz, onExitAdmi
       updated = [newRec, ...attendanceRecords];
     }
 
-    setAttendanceRecords(updated);
-    saveStoredAttendance(updated);
+    const record=updated.find(r=>r.studentId===student.id && r.date===currentSessionDate && r.sessionTitle===currentSessionTitle)!;
+    try{await saveAttendance(record);setAttendanceRecords(prev=>[record,...prev.filter(r=>r.id!==record.id)]);setRecordsError('');}catch(e){setRecordsError((e as Error).message);}
   };
 
   const getStudentStatusForSession = (studentId: string): AttendanceStatus | 'unrecorded' => {
     const rec = attendanceRecords.find(
-      r => r.studentId === studentId && (r.sessionTitle === currentSessionTitle || r.date === currentSessionDate)
+      r => r.studentId === studentId && (r.sessionTitle === currentSessionTitle && r.date === currentSessionDate)
     );
     return rec ? rec.status : 'unrecorded';
   };
 
   // Handler: Delete Quiz
-  const handleDeleteQuiz = (quizId: string) => {
-    if (!confirm('هل أنت متأكد من حذف هذا الاختبار؟')) return;
-    const next = quizzes.filter(q => q.id !== quizId);
-    setQuizzes(next);
-    saveStoredQuizzes(next);
+  const handleDeleteQuiz = async (quizId: string) => {
+    if (!confirm('إلغاء نشر الامتحان للطلاب؟')) return;
+    try { await archiveQuiz(quizId); } catch(e) { setQuizError(e instanceof Error?e.message:'تعذر إلغاء النشر.'); }
   };
 
   // Handler: Save New Quiz
-  const handleCreateQuiz = (e: React.FormEvent) => {
+  const handleCreateQuiz = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newQuizTitle.trim()) return;
+    if (savingQuiz) return;
+    setQuizError('');
 
     const created: Quiz = {
       id: 'quiz_' + Date.now(),
@@ -155,14 +150,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSelectQuiz, onExitAdmi
       questions: newQuestions,
     };
 
-    const next = [created, ...quizzes];
-    setQuizzes(next);
-    saveStoredQuizzes(next);
-    setShowAddQuizModal(false);
-    setNewQuizTitle('');
+    setSavingQuiz(true);
+    try { await publishQuiz(created); setShowAddQuizModal(false);setNewQuizTitle('');setNewQuestions([]); }
+    catch(e) {setQuizError(e instanceof Error?e.message:'تعذر نشر الامتحان.');}
+    finally {setSavingQuiz(false);}
   };
 
-  const filteredStudents = students.filter(s => {
+  const filteredStudents = students.map(s=>({...s,examAttempts:attempts.filter(a=>a.studentId===s.id)})).filter(s => {
     const matchesGrade = selectedGrade === 'all' || s.grade === selectedGrade;
     const matchesSearch =
       searchStudent.trim() === '' ||
@@ -175,6 +169,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSelectQuiz, onExitAdmi
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100 py-8 px-4 sm:px-6 lg:px-8 transition-colors">
       <div className="max-w-7xl mx-auto space-y-8">
+        {(quizzesError || (!showAddQuizModal && quizError)) && <p role="alert" className="text-rose-400">{quizzesError || quizError}</p>}
         <div className="flex flex-wrap items-center gap-3 text-sm">
           <button className="rounded-lg bg-emerald-600 px-4 py-2 text-white disabled:opacity-50" disabled={studentsLoading} onClick={() => setReloadStudents(n => n + 1)}>تحديث سجل الطلاب</button>
           {studentsLoading && <span role="status">جارٍ تحميل الطلاب من قاعدة البيانات…</span>}
@@ -262,12 +257,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSelectQuiz, onExitAdmi
               <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums">
-              88.5%
+              {attempts.length ? Math.round(attempts.reduce((sum,a)=>sum+a.percentage,0)/attempts.length) : 0}%
             </div>
             <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 block">مستوى تفوق ممتاز</span>
           </div>
         </div>
 
+        {(recordsError||attemptsError)&&<p role="alert">{recordsError||attemptsError}</p>}
+        <div className="flex gap-3"><button className="rounded-xl bg-emerald-700 text-white p-3" onClick={()=>setActiveTab('courses')}>إدارة الكورسات والفيديوهات</button><button className="rounded-xl bg-cyan-700 text-white p-3" onClick={()=>setActiveTab('results')}>نتائج الطلاب وتصحيح المقالي</button></div>
+        {activeTab==='courses'&&<CourseManager/>}{activeTab==='results'&&<ResultsManager/>}
         {/* Tab Switcher */}
         <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
           <button
@@ -611,6 +609,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSelectQuiz, onExitAdmi
               </div>
 
               <form onSubmit={handleCreateQuiz} className="space-y-4 text-xs">
+                {legacyQuizDrafts().length>0&&<label>استيراد مسودة امتحان قديم من هذا الجهاز<select className="bg-slate-800 text-white p-2 w-full" defaultValue="" onChange={e=>{const q=legacyQuizDrafts().find(q=>q.id===e.target.value);if(q){setNewQuizTitle(q.title);setNewQuestions(q.questions);setNewQuizDuration(q.timeLimitMinutes);setNewQuizPassing(q.passingScore);}}}><option value="">ابدأ امتحانًا جديدًا أو اختر مسودة لمراجعتها ونشرها</option>{legacyQuizDrafts().map(q=><option key={q.id} value={q.id}>{q.title}</option>)}</select></label>}
                 <div>
                   <label className="font-semibold text-slate-300 block mb-1">عنوان الامتحان:</label>
                   <input
@@ -676,12 +675,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSelectQuiz, onExitAdmi
                   </div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-slate-800 border border-slate-700 space-y-2">
-                  <span className="font-bold text-emerald-400 block">أسئلة الاختبار (تم ضبط السؤال الأول تلقائياً):</span>
-                  <div className="text-slate-300">
-                    س: {newQuestions[0].prompt}
-                  </div>
-                </div>
+                <QuestionEditor questions={newQuestions} onChange={setNewQuestions} />
+                {quizError && <p role="alert" className="text-rose-300">{quizError}</p>}
 
                 <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
                   <button
@@ -693,10 +688,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSelectQuiz, onExitAdmi
                   </button>
 
                   <button
-                    type="submit"
+                    type="submit" disabled={savingQuiz}
                     className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold shadow-md"
                   >
-                    حفظ ونشر الاختبار
+                    {savingQuiz ? 'جارٍ الحفظ…' : 'حفظ ونشر الاختبار'}
                   </button>
                 </div>
               </form>

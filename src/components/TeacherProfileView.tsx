@@ -3,9 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { useQuizzes } from '../utils/quizzes';
 import React, { useState } from 'react';
 import { Teacher, Course, GradeLevel } from '../types';
-import { mockCourses, mockLectures, mockQuizzes } from '../data/mockData';
+import { useCatalog } from '../utils/catalog';
 import {
   Star,
   Users,
@@ -35,6 +36,8 @@ export const TeacherProfileView: React.FC<TeacherProfileViewProps> = ({
   onSelectQuiz,
   onEnrollCourse,
 }) => {
+  const {courses:mockCourses,lectures:mockLectures}=useCatalog();
+  const {quizzes: mockQuizzes} = useQuizzes();
   // Tabs matching Bassthalk teacher page
   const [activeSubTab, setActiveSubTab] = useState<'courses' | 'videos' | 'revisions' | 'quizzes' | 'about'>('courses');
   const [selectedGrade, setSelectedGrade] = useState<GradeLevel | 'all'>('sec3');
@@ -283,7 +286,7 @@ export const TeacherProfileView: React.FC<TeacherProfileViewProps> = ({
                     <div className="flex flex-col">
                       <span className="text-[11px] text-slate-500 dark:text-slate-400">قيمة الاشتراك</span>
                       <span className="text-base font-extrabold text-emerald-600 dark:text-emerald-400 tabular-nums">
-                        {course.price} ج.م <span className="text-xs font-normal text-slate-500 dark:text-slate-400">/ للترم</span>
+                        {course.isFree?'مجاني':`${course.price} ج.م`}
                       </span>
                     </div>
 

@@ -8,8 +8,8 @@ import { User } from '../types';
 import { Sun, Moon, LogIn, UserCheck, ShieldCheck } from 'lucide-react';
 
 interface HeaderProps {
-  activeTab: 'home' | 'teacher' | 'videos' | 'exams' | 'admin';
-  setActiveTab: (tab: 'home' | 'teacher' | 'videos' | 'exams' | 'admin') => void;
+  activeTab: 'home' | 'teacher' | 'videos' | 'exams' | 'admin' | 'account';
+  setActiveTab: (tab: 'home' | 'teacher' | 'videos' | 'exams' | 'admin' | 'account') => void;
   currentUser: User;
   onOpenAuth: () => void;
   isDark: boolean;
@@ -44,6 +44,7 @@ export const Header: React.FC<HeaderProps> = ({
       )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between gap-8">
+        {currentUser.id!=='guest'&&<button className="text-emerald-500 font-bold whitespace-nowrap" onClick={()=>setActiveTab('account')}>حسابي ودرجاتي</button>}
         {/* Zone 1: Brand Wordmark */}
         <button
           onClick={() => setActiveTab('home')}

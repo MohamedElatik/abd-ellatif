@@ -3,10 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Quiz, Question, User, ExamAttempt } from '../types';
 import { calculateExamScore } from '../utils/rules';
-import { saveQuizAttempt } from '../utils/storage';
+import { databaseRequest } from '../utils/quizzes';
+import type { SavedAttempt } from '../utils/records';
 import confetti from 'canvas-confetti';
 import {
   Clock,
@@ -36,8 +37,11 @@ export const QuizEngineModal: React.FC<QuizEngineModalProps> = ({
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [timeRemainingSeconds, setTimeRemainingSeconds] = useState<number>(quiz.timeLimitMinutes * 60);
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
-  const [result, setResult] = useState<ReturnType<typeof calculateExamScore> | null>(null);
+  const [result, setResult] = useState<SavedAttempt | null>(null);
 
+  const answersRef=useRef(answers);answersRef.current=answers;
+  const busyRef=useRef(false),attemptId=useRef(crypto.randomUUID());
+  const [submitError,setSubmitError]=useState(''),[submitting,setSubmitting]=useState(false);
   // Timer effect
   useEffect(() => {
     if (isSubmitted) return;
@@ -72,38 +76,10 @@ export const QuizEngineModal: React.FC<QuizEngineModalProps> = ({
     }));
   };
 
-  const handleSubmitExam = () => {
-    const calc = calculateExamScore(answers, quiz.questions);
-    setResult(calc);
-    setIsSubmitted(true);
-
-    if (calc.isPassed) {
-      try {
-        confetti({
-          particleCount: 80,
-          spread: 70,
-          origin: { y: 0.6 },
-        });
-      } catch {}
-    }
-
-    // Record attempt
-    const attempt: ExamAttempt = {
-      id: 'att_' + Date.now(),
-      quizId: quiz.id,
-      quizTitle: quiz.title,
-      studentId: currentUser.id || 'std_guest',
-      studentName: currentUser.name || 'طالب زائر',
-      studentPhone: currentUser.phone || '01000000000',
-      grade: quiz.grade,
-      score: calc.score,
-      totalPoints: calc.totalPoints,
-      percentage: calc.percentage,
-      isPassed: calc.isPassed,
-      completedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
-      answers,
-    };
-    saveQuizAttempt(attempt);
+  const handleSubmitExam = async () => {
+    if(busyRef.current)return;busyRef.current=true;setSubmitting(true);setSubmitError('');
+    try{const calc:SavedAttempt=await databaseRequest('rpc/submit_platform_quiz','POST',{quiz_id:quiz.id,answers:answersRef.current,attempt_id:attemptId.current});setResult(calc);setIsSubmitted(true);window.dispatchEvent(new Event('attempts_changed'));if(calc.isPassed)try{confetti({particleCount:80,spread:70,origin:{y:0.6}});}catch{}}
+    catch(e){setSubmitError((e as Error).message);}finally{busyRef.current=false;setSubmitting(false);}
   };
 
   const currentQ = quiz.questions[currentQuestionIndex];
@@ -157,6 +133,7 @@ export const QuizEngineModal: React.FC<QuizEngineModalProps> = ({
           </div>
         </div>
 
+        {submitError&&<p role="alert" className="p-3 text-rose-300">{submitError} <button onClick={()=>void handleSubmitExam()}>إعادة تسليم الامتحان</button></p>}{submitting&&<p className="p-3">جاري حفظ الإجابات والدرجة…</p>}
         {/* Modal Body */}
         <div className="p-6 overflow-y-auto flex-1 space-y-6">
           {!isSubmitted ? (
@@ -299,7 +276,7 @@ export const QuizEngineModal: React.FC<QuizEngineModalProps> = ({
                   </div>
 
                   <h3 className="text-xl sm:text-2xl font-black text-white mb-1">
-                    {result.isPassed ? 'مبارك! اجتزت الاختبار بنجاح' : 'لم توفق هذه المرة، راجع أخطاءك'}
+                    {result.pendingReview ? 'تم حفظ الامتحان — المقالي بانتظار التصحيح' : result.isPassed ? 'مبارك! اجتزت الاختبار بنجاح' : 'لم توفق هذه المرة، راجع أخطاءك'}
                   </h3>
 
                   <p className="text-xs text-slate-300 mb-4">
@@ -339,11 +316,11 @@ export const QuizEngineModal: React.FC<QuizEngineModalProps> = ({
                     <span>التصحيح النموذجي والتفسير العلمي للأسئلة</span>
                   </h4>
 
-                  {quiz.questions.map((q, idx) => {
+                  {result.questions.map((q, idx) => {
                     const studentAns = answers[q.id];
                     const isCorrect = q.type === 'mcq'
                       ? studentAns === q.correctAnswer
-                      : (studentAns && studentAns.trim().length >= 10);
+                      : false;
 
                     return (
                       <div
@@ -359,7 +336,7 @@ export const QuizEngineModal: React.FC<QuizEngineModalProps> = ({
                           <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${
                             isCorrect ? 'text-emerald-400 bg-emerald-950' : 'text-rose-400 bg-rose-950'
                           }`}>
-                            {isCorrect ? 'إجابة صحيحة' : 'بحاجة لمراجعة'}
+                            {q.type==='essay'?'بانتظار تصحيح المدرس':isCorrect ? 'إجابة صحيحة' : 'بحاجة لمراجعة'}
                           </span>
                         </div>
 
@@ -395,7 +372,7 @@ export const QuizEngineModal: React.FC<QuizEngineModalProps> = ({
                 <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
                   <button
                     onClick={() => {
-                      setIsSubmitted(false);
+                      attemptId.current=crypto.randomUUID();setResult(null);setIsSubmitted(false);
                       setAnswers({});
                       setTimeRemainingSeconds(quiz.timeLimitMinutes * 60);
                       setCurrentQuestionIndex(0);

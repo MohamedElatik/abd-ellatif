@@ -3,15 +3,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { useCatalog } from './utils/catalog';
+import { StudentDashboard } from './components/StudentDashboard';
+import { useQuizzes } from './utils/quizzes';
 import React, { useState, useEffect } from 'react';
 import { User, Quiz } from './types';
 import { currentAuthUser, AUTH_CHANGED, refreshIdentity } from './utils/auth';
 import {
   getStoredTheme,
   saveStoredTheme,
-  getStoredQuizzes,
 } from './utils/storage';
-import { mockTeacher, mockCourses, mockLectures } from './data/mockData';
+import { mockTeacher } from './data/mockData';
 import { Header } from './components/Header';
 import { HeroSection } from './components/HeroSection';
 import { TeacherProfileView } from './components/TeacherProfileView';
@@ -33,7 +35,8 @@ import {
 } from 'lucide-react';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'home' | 'teacher' | 'videos' | 'exams' | 'admin'>('home');
+  const {courses:mockCourses,lectures:mockLectures,error:catalogError}=useCatalog();
+  const [activeTab, setActiveTab] = useState<'home' | 'teacher' | 'videos' | 'exams' | 'admin' | 'account'>('home');
   const [currentUser, setCurrentUser] = useState<User>(() => currentAuthUser());
   useEffect(() => {
     const sync = () => setCurrentUser(currentAuthUser());
@@ -64,8 +67,8 @@ export default function App() {
   };
 
   // Find active quiz object
-  const allQuizzes = getStoredQuizzes();
-  const currentQuiz = activeQuizId ? allQuizzes.find(q => q.id === activeQuizId) || allQuizzes[0] : null;
+  const { quizzes: allQuizzes, error: quizzesError } = useQuizzes();
+  const currentQuiz = activeQuizId ? allQuizzes.find(q => q.id === activeQuizId) : null;
 
   const handleStartQuiz = (quizId: string) => {
     setActiveQuizId(quizId);
@@ -95,6 +98,8 @@ export default function App() {
 
       {/* 2. Main Page Views */}
       <main className="flex-1">
+        {catalogError&&<p role="alert" className="p-4">{catalogError}</p>}
+        {activeTab==='account'&&currentUser.id!=='guest'&&<StudentDashboard user={currentUser}/>}
         {activeTab === 'home' && (
           <div>
             {/* Hero Section with 3D DNA Canvas (Ahmed El-Gohary inspired) */}
@@ -268,6 +273,8 @@ export default function App() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {quizzesError && <p role="alert">{quizzesError}</p>}
+              {!quizzesError && allQuizzes.length === 0 && <p>لم ينشر المعلم امتحانات بعد.</p>}
               {allQuizzes.map(quiz => (
                 <div
                   key={quiz.id}

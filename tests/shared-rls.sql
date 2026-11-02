@@ -1,0 +1,22 @@
+begin;
+select set_config('test.user',gen_random_uuid()::text,true),set_config('test.other',gen_random_uuid()::text,true),set_config('test.session',gen_random_uuid()::text,true);
+insert into auth.users(id,email,email_confirmed_at,raw_app_meta_data) values(current_setting('test.user')::uuid,'rls-test@example.invalid',now(),'{"role":"admin"}'),(current_setting('test.other')::uuid,'rls-other@example.invalid',now(),'{}');
+insert into auth.sessions(id,user_id) values(current_setting('test.session')::uuid,current_setting('test.user')::uuid);
+select set_config('request.jwt.claims',jsonb_build_object('sub',current_setting('test.user'),'session_id',current_setting('test.session'),'role','authenticated')::text,true);
+insert into public.platform_quizzes(id,document) values('rls_quiz','{"id":"rls_quiz","grade":"sec3","title":"test","passingScore":60,"questions":[{"id":"q","type":"mcq","points":1,"correctAnswer":"a"}]}');
+insert into public.platform_attempts(id,student_id,quiz_id,document) values(gen_random_uuid(),current_setting('test.other')::uuid,'rls_quiz','{}');
+set local role authenticated;
+insert into public.platform_quizzes(id,document) values('rls_admin_quiz','{"id":"rls_admin_quiz","grade":"sec3","title":"test","questions":[{}]}');
+update public.platform_quizzes set published=false where id='rls_admin_quiz';
+do $$begin if (select count(*) from public.platform_attempts where student_id=current_setting('test.other')::uuid)<>1 then raise exception 'admin cannot read attempts';end if;end $$;
+reset role;
+update auth.users set raw_app_meta_data='{}' where id=current_setting('test.user')::uuid;
+set local role authenticated;
+do $$begin
+if (select count(*) from public.platform_attempts where student_id=current_setting('test.other')::uuid)<>0 then raise exception 'cross student leak';end if;
+begin insert into public.platform_profiles(user_id,avatar) values(current_setting('test.other')::uuid,'data:image/jpeg;base64,AAAA');raise exception 'avatar cross write';exception when insufficient_privilege then null;end;
+begin insert into public.platform_quizzes(id,document) values('forbidden','{"id":"forbidden","grade":"sec3","title":"test","questions":[{}]}');raise exception 'student published';exception when insufficient_privilege then null;end;
+insert into public.platform_profiles(user_id,avatar) values(current_setting('test.user')::uuid,'data:image/jpeg;base64,AAAA');
+end $$;
+reset role;
+rollback;

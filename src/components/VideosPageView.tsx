@@ -5,7 +5,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Lecture, GradeLevel } from '../types';
-import { mockLectures } from '../data/mockData';
+import { useCatalog } from '../utils/catalog';
 import { DrmPlayer } from './DrmPlayer';
 import {
   Play,
@@ -33,14 +33,12 @@ export const VideosPageView: React.FC<VideosPageViewProps> = ({
   selectedLectureId,
   onClearSelectedLecture,
 }) => {
+  const {lectures:mockLectures,courses,error}=useCatalog();
+  const [courseFilter,setCourseFilter]=useState('');
   const [selectedGrade, setSelectedGrade] = useState<GradeLevel | 'all'>('sec3');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [activeVideo, setActiveVideo] = useState<Lecture | null>(() => {
-    if (selectedLectureId) {
-      return mockLectures.find(l => l.id === selectedLectureId) || mockLectures[0];
-    }
-    return null;
-  });
+  const [activeVideo,setActiveVideo]=useState<Lecture|null>(null);
+  useEffect(()=>{if(selectedLectureId)setActiveVideo(mockLectures.find(l=>l.id===selectedLectureId)||null);},[selectedLectureId,mockLectures]);
 
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -57,7 +55,7 @@ export const VideosPageView: React.FC<VideosPageViewProps> = ({
       searchQuery.trim() === '' ||
       lec.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       lec.unitTitle.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesGrade && matchesSearch;
+    return matchesGrade && matchesSearch && (!courseFilter||lec.courseId===courseFilter);
   });
 
   return (
@@ -88,6 +86,7 @@ export const VideosPageView: React.FC<VideosPageViewProps> = ({
           </div>
         </div>
 
+        {error&&<p role="alert">{error}</p>}<label>الكورس<select className="p-3 rounded-lg bg-slate-800 text-white mx-3" value={courseFilter} onChange={e=>setCourseFilter(e.target.value)}><option value="">كل الكورسات</option>{courses.map(c=><option key={c.id} value={c.id}>{c.title} — {c.isFree?'مجاني':c.price+' ج.م'}</option>)}</select></label>
         {/* Grade Selector Tabs (Bassthalk style) */}
         <div className="flex items-center gap-2 overflow-x-auto p-1 bg-white dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-800 w-fit shadow-xs">
           <button
