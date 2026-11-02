@@ -1,0 +1,8 @@
+import { useEffect, useState } from 'react';
+import { databaseRequest } from '../utils/quizzes';
+import { useCatalog } from '../utils/catalog';
+import { percent, type Progress } from '../utils/progress';
+export function WatchDashboard(){const [rows,setRows]=useState<Progress[]>([]),[error,setError]=useState('');const {lectures,courses}=useCatalog();
+ useEffect(()=>{let alive=true;const load=async()=>{try{const data=await databaseRequest('video_progress?select=*&order=updated_at.desc');if(alive){setRows(data);setError('');}}catch(e){if(alive)setError((e as Error).message);}};void load();window.addEventListener('video_progress_changed',load);return()=>{alive=false;window.removeEventListener('video_progress_changed',load);};},[]);
+ return <section className="sx-card space-y-4"><h2 className="text-xl font-bold">مشاهداتي وتقدّمي في الفيديوهات</h2>{error&&<p role="alert">{error}</p>}{!rows.length&&<p>ابدأ مشاهدة درس؛ مكان توقفك ونسبة المشاهدة سيُحفظان هنا.</p>}<div className="grid md:grid-cols-2 gap-4">{rows.map(p=>{const l=lectures.find(l=>l.id===p.lecture_id),c=courses.find(c=>c.id===l?.courseId);return <article key={p.lecture_id} className="sx-card">{c?.thumbnail&&<img src={c.thumbnail} alt="" className="w-full aspect-video object-cover rounded-xl"/>}<h3>{l?.title||'درس غير منشور حاليًا'}</h3><p>{c?.title}</p><progress className="w-full" max={100} value={percent(p)}/><p>شاهدت {percent(p)}% — آخر توقف {Math.floor(Number(p.position)/60)}:{String(Math.floor(Number(p.position)%60)).padStart(2,'0')}</p>{l&&<a className="sx-btn sx-btn-primary" href={`?page=videos&lesson=${encodeURIComponent(l.id)}`}>استكمل المشاهدة</a>}</article>;})}</div></section>;
+}

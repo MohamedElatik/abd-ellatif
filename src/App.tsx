@@ -16,7 +16,8 @@ import {
 import { mockTeacher } from './data/mockData';
 import { SiteHeader, SiteFooter, PageBanner } from './components/SiteChrome';
 import { LandingPage } from './components/LandingPage';
-import { CodeAttendance } from './components/CodeAttendance';
+import { AttendanceDesk } from './components/AttendanceDesk';
+import { CourseManager } from './components/CourseManager';
 
 import { VideosPageView } from './components/VideosPageView';
 import { QuizEngineModal } from './components/QuizEngineModal';
@@ -36,7 +37,9 @@ import {
 
 export default function App() {
   const {courses:mockCourses,lectures:mockLectures,error:catalogError}=useCatalog();
-  const [activeTab, setActiveTab] = useState<'home' | 'videos' | 'exams' | 'admin' | 'account' | 'attendance'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'videos' | 'exams' | 'admin' | 'account' | 'attendance' | 'courses'>(() => { const t=new URLSearchParams(location.search).get('page'); return ['home','videos','exams','admin','account','attendance','courses'].includes(t||'') ? t as any : 'home'; });
+  useEffect(()=>{const url=new URL(location.href);url.searchParams.set('page',activeTab);history.replaceState(null,'',url);},[activeTab]);
+  const [authReady,setAuthReady]=useState(false);
   const [currentUser, setCurrentUser] = useState<User>(() => currentAuthUser());
   useEffect(() => {
     const sync = () => {
@@ -45,8 +48,10 @@ export default function App() {
       if (u.id === 'guest') setActiveTab(t => (t === 'account' || t === 'admin' || t === 'attendance' ? 'home' : t));
     };
     window.addEventListener(AUTH_CHANGED, sync);
-    void refreshIdentity();
-    return () => window.removeEventListener(AUTH_CHANGED, sync);
+    void refreshIdentity().finally(()=>setAuthReady(true));
+    const timer=setInterval(()=>void refreshIdentity(),60000);
+    const focus=()=>void refreshIdentity(); window.addEventListener('focus',focus);
+    return () => { clearInterval(timer);window.removeEventListener('focus',focus);window.removeEventListener(AUTH_CHANGED,sync); };
   }, []);
   const [isDark, setIsDark] = useState<boolean>(() => getStoredTheme() === 'dark');
 
@@ -89,6 +94,7 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  if(!authReady)return <div className="p-10 text-center">جارٍ استعادة تسجيل الدخول…</div>;
   return (
     <div className={`min-h-screen flex flex-col ${isDark ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'} transition-colors`}>
       
@@ -189,7 +195,7 @@ export default function App() {
         {activeTab === 'attendance' && (
           <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
             {currentUser.role === 'secretary' || currentUser.role === 'admin' || currentUser.role === 'teacher'
-              ? <CodeAttendance />
+              ? <AttendanceDesk />
               : <div className="sx-card" style={{ textAlign: 'center' }}>
                   <p className="mb-4">الصفحة دي للسكرتير والمعلم بس.</p>
                   <button className="sx-btn sx-btn-primary" onClick={() => setShowAuthModal(true)}>تسجيل الدخول</button>
@@ -197,6 +203,7 @@ export default function App() {
           </div>
         )}
 
+        {activeTab === 'courses' && (['admin','teacher','secretary'].includes(currentUser.role) ? <div className="max-w-7xl mx-auto p-6"><CourseManager/></div> : <p className="p-8">سجّل الدخول بحساب الإدارة.</p>)}
         {activeTab === 'admin' && <PageBanner eyebrow="للمعلم والإدارة" title="لوحة تحكم المدرس" text="الطلاب والحضور والامتحانات والتصحيح والكورسات." />}
         {activeTab === 'admin' && (
           currentUser.role === 'teacher' || currentUser.role === 'admin' ? (

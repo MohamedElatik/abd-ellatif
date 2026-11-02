@@ -1,0 +1,38 @@
+begin;
+do $$
+declare a uuid:=gen_random_uuid(); b uuid:=gen_random_uuid(); u uuid:=gen_random_uuid(); other uuid:=gen_random_uuid(); asid uuid:=gen_random_uuid(); bsid uuid:=gen_random_uuid(); usid uuid:=gen_random_uuid(); gid uuid; gid2 uuid; code text; rows jsonb;
+begin
+insert into auth.users(id,email,email_confirmed_at,raw_app_meta_data,raw_user_meta_data) values(a,'staff-a@example.invalid',now(),'{"role":"secretary"}','{"name":"A"}'),(b,'staff-b@example.invalid',now(),'{"role":"secretary"}','{"name":"B"}'),(u,'watch@example.invalid',now(),'{}','{"name":"Student","parentPhone":"01000000001"}'),(other,'outside@example.invalid',now(),'{}','{}');
+insert into auth.sessions(id,user_id) values(asid,a),(bsid,b),(usid,u);
+select c.code into code from public.platform_student_codes c where user_id=u;
+perform set_config('request.jwt.claims',jsonb_build_object('sub',a,'session_id',asid,'role','authenticated')::text,true);
+gid:=public.open_attendance_group('Group A',current_date,array[u]);
+gid2:=public.open_attendance_group('Group B',current_date,array[other]);
+perform public.mark_group_attendance(gid,code,'present');
+begin perform public.mark_group_attendance(gid2,code,'present');raise exception 'wrong group allowed';exception when others then if sqlerrm<>'Student not in this group' then raise;end if;end;
+perform set_config('request.jwt.claims',jsonb_build_object('sub',b,'session_id',bsid,'role','authenticated')::text,true);
+rows:=public.attendance_group_rows(gid);if rows->0->>'status'<>'present' then raise exception 'not shared';end if;
+perform public.mark_group_attendance(gid,code,'late');
+begin perform public.close_attendance_group(gid);raise exception 'other staff closed group';exception when insufficient_privilege then null;end;
+begin perform public.list_platform_students();raise exception 'secretary got admin roster';exception when insufficient_privilege then null;end;
+perform public.save_platform_course('{"id":"test_staff_course","title":"Staff course","grade":"sec3"}');
+perform public.save_platform_lecture('{"id":"test_staff_lesson","title":"Lesson","grade":"sec3","courseId":"test_staff_course"}','12345678901234567890123456789012');
+perform public.save_platform_lecture('{"id":"test_staff_lesson","title":"Renamed","grade":"sec3","courseId":"test_staff_course"}','');
+if not exists(select 1 from public.platform_lectures where id='test_staff_lesson' and document->>'title'='Renamed') then raise exception 'rename failed';end if;
+perform set_config('request.jwt.claims',jsonb_build_object('sub',a,'session_id',asid,'role','authenticated')::text,true);
+perform public.close_attendance_group(gid);perform public.close_attendance_group(gid2);
+if public.attendance_group_rows(gid2)->0->>'status'<>'absent' then raise exception 'missing absence';end if;
+begin perform public.mark_group_attendance(gid,code,'present');raise exception 'closed editable';exception when others then if sqlerrm<>'Session closed or missing' then raise;end if;end;
+perform set_config('request.jwt.claims',jsonb_build_object('sub',u,'session_id',usid,'role','authenticated')::text,true);
+begin perform public.attendance_group_rows(gid);raise exception 'student sees groups';exception when insufficient_privilege then null;end;
+begin perform public.save_platform_course('{"id":"bad","title":"No","grade":"sec3"}');raise exception 'student edits';exception when insufficient_privilege then null;end;
+perform public.save_video_progress('test_staff_lesson',20,100,array[0,1,2,3]);
+perform public.save_video_progress('test_staff_lesson',30,100,array[2,3,4]);
+if (select cardinality(watched_seconds) from public.video_progress where user_id=u and lecture_id='test_staff_lesson')<>5 then raise exception 'progress union';end if;
+if has_function_privilege('anon','public.open_attendance_group(text,date,uuid[])','execute') or has_table_privilege('authenticated','public.attendance_sessions','INSERT') or has_table_privilege('authenticated','public.video_progress','UPDATE') then raise exception 'unsafe grants';end if;
+perform set_config('test.student',u::text,true);
+end $$;
+set local role authenticated;
+do $$begin if (select count(*) from public.video_progress)<>1 then raise exception 'own progress access';end if;if exists(select 1 from public.attendance_sessions) then raise exception 'student sees staff sessions';end if;end $$;
+reset role;
+rollback;

@@ -1,3 +1,4 @@
+import { trackVideo } from '../utils/progress';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -38,6 +39,8 @@ export const VideosPageView: React.FC<VideosPageViewProps> = ({
   const [selectedGrade, setSelectedGrade] = useState<GradeLevel | 'all'>('sec3');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [activeVideo,setActiveVideo]=useState<Lecture|null>(null);
+  useEffect(()=>{if(activeVideo){const url=new URL(location.href);url.searchParams.set('lesson',activeVideo.id);history.replaceState(null,'',url);}},[activeVideo?.id]);
+  useEffect(()=>{const id=new URLSearchParams(location.search).get('lesson');if(id&&!activeVideo){const found=mockLectures.find(l=>l.id===id);if(found)setActiveVideo(found);}},[mockLectures]);
   const selectedApplied=useRef<string|undefined>(undefined);
   useEffect(()=>{if(!selectedLectureId){selectedApplied.current=undefined;return;}if(selectedApplied.current===selectedLectureId)return;const lecture=mockLectures.find(l=>l.id===selectedLectureId);if(lecture){setActiveVideo(lecture);selectedApplied.current=selectedLectureId;}},[selectedLectureId,mockLectures]);
 
@@ -50,6 +53,7 @@ export const VideosPageView: React.FC<VideosPageViewProps> = ({
     }
   }, [playbackSpeed, activeVideo]);
 
+  useEffect(()=>{if(!videoRef.current||!activeVideo||activeVideo.playbackProvider==='vdocipher')return;let cancelled=false;let stop=()=>{};void trackVideo(videoRef.current,activeVideo.id,()=>cancelled).then(f=>{stop=f;if(cancelled)stop();});return()=>{cancelled=true;stop();};},[activeVideo?.id]);
   const filteredLectures = mockLectures.filter(lec => {
     const matchesGrade = selectedGrade === 'all' || lec.grade === selectedGrade;
     const matchesSearch =
@@ -84,6 +88,7 @@ export const VideosPageView: React.FC<VideosPageViewProps> = ({
 
         {error&&<p role="alert">{error}</p>}<label>الكورس<select className="p-3 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700 mx-3" value={courseFilter} onChange={e=>setCourseFilter(e.target.value)}><option value="">كل الكورسات</option>{courses.map(c=><option key={c.id} value={c.id}>{c.title} — مجاني</option>)}</select></label>
         {!error&&mockLectures.length===0&&<p className="p-8 text-center rounded-xl border">لا توجد فيديوهات منشورة حاليًا. ستظهر هنا الكورسات والفيديوهات التي يضيفها المدرس.</p>}
+        <div className="grid md:grid-cols-3 gap-4">{courses.map(c=><button key={c.id} className="sx-card text-right" onClick={()=>setCourseFilter(c.id)}>{c.thumbnail&&<img className="w-full aspect-video object-cover rounded-xl" src={c.thumbnail} alt={c.title}/>}<h3>{c.title}</h3><p>{c.totalLectures} دروس</p></button>)}</div>
         {/* Grade Selector Tabs (Bassthalk style) */}
         <div className="flex items-center gap-2 overflow-x-auto p-1 bg-white dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-800 w-fit shadow-xs">
           <button
@@ -113,7 +118,7 @@ export const VideosPageView: React.FC<VideosPageViewProps> = ({
               </div>
               <button
                 onClick={() => {
-                  setActiveVideo(null);
+                  setActiveVideo(null);const url=new URL(location.href);url.searchParams.delete('lesson');history.replaceState(null,'',url);
                   if (onClearSelectedLecture) onClearSelectedLecture();
                 }}
                 className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
@@ -212,7 +217,7 @@ export const VideosPageView: React.FC<VideosPageViewProps> = ({
                 className="relative aspect-video bg-slate-100 dark:bg-slate-950 cursor-pointer overflow-hidden"
               >
                 <img
-                  src={lec.thumbnail}
+                  src={courses.find(c=>c.id===lec.courseId)?.thumbnail || lec.thumbnail || '/landing/logo.png'}
                   alt={lec.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 opacity-90"
                   referrerPolicy="no-referrer"

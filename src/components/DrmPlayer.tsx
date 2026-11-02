@@ -1,8 +1,11 @@
-import React, { useEffect, useState } from 'react';
-
+import React, { useEffect, useState, useRef } from 'react';
+import { trackVideo } from '../utils/progress';
+let playerApi: Promise<void> | null=null;
+function loadApi(){if((window as any).VdoPlayer)return Promise.resolve();if(!playerApi)playerApi=new Promise<void>((resolve,reject)=>{const s=document.createElement('script');s.src='https://player.vdocipher.com/v2/api.js';s.onload=()=>resolve();s.onerror=()=>{playerApi=null;reject(new Error('Player API unavailable'));};document.head.appendChild(s);});return playerApi;}
 
 interface Props { lectureId: string; title: string; onSignIn: () => void }
 export function DrmPlayer({ lectureId, title, onSignIn }: Props) {
+  const iframe = useRef<HTMLIFrameElement>(null);
   const [version, setVersion] = useState(0);
   const [player, setPlayer] = useState<{ lectureId: string; url: string } | null>(null);
   const [error, setError] = useState('');
@@ -31,8 +34,9 @@ export function DrmPlayer({ lectureId, title, onSignIn }: Props) {
     void start();
     return () => controller.abort();
   }, [lectureId, version]);
+  useEffect(()=>{if(!player||!iframe.current)return;let cancelled=false;let cleanup=()=>{};const frame=iframe.current;void loadApi().then(async()=>{if(cancelled)return;const video=(window as any).VdoPlayer.getInstance(frame).video;cleanup=await trackVideo(video,lectureId,()=>cancelled);if(cancelled)cleanup();}).catch(()=>{});return()=>{cancelled=true;cleanup();};},[player,lectureId]);
   if (player?.lectureId === lectureId) return (
-    <iframe key={player.url} src={player.url} title={title} allow="encrypted-media; fullscreen; picture-in-picture" allowFullScreen
+    <iframe ref={iframe} key={player.url} src={player.url} title={title} allow="encrypted-media; fullscreen; picture-in-picture" allowFullScreen
       referrerPolicy="no-referrer" className="w-full h-full border-0" />
   );
   return <div className="h-full flex flex-col items-center justify-center gap-4 p-6 text-center text-white" aria-live="polite">

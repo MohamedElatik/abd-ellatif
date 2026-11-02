@@ -5,7 +5,7 @@ Vite/React on Vercel with Supabase-backed courses, exams, student results and pr
 ## Current access model
 
 - All published courses and videos are free to watch, including for visitors without an account.
-- Only the verified teacher/admin can create courses or publish videos. Course prices are normalized to zero in the database.
+- Verified teachers and secretaries can create/edit courses, publish/edit lessons and upload course images. Student deletion and role administration remain teacher-only. Course prices are normalized to zero in the database.
 - The teacher profile page is removed. The teacher admin dashboard remains available to staff.
 - The previous demonstration course and six lessons are unpublished, with their records retained for recovery. The old seed script no longer inserts examples.
 - Student exams, grades, attendance and profile photos still require authentication and retain their existing row-level access controls.

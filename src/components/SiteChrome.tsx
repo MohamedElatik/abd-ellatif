@@ -5,7 +5,7 @@ import { signOut } from '../utils/auth';
 import { useAvatar, initialOf } from '../utils/profile';
 import './site.css';
 
-export type Tab = 'home' | 'videos' | 'exams' | 'admin' | 'account' | 'attendance';
+export type Tab = 'home' | 'videos' | 'exams' | 'admin' | 'account' | 'attendance' | 'courses';
 export const LOGO = `${import.meta.env.BASE_URL}landing/logo.png`;
 
 /** Scrolls to a landing-page section, switching to the home tab first when needed. */
@@ -50,6 +50,7 @@ export function SiteHeader({ activeTab, currentUser, onNavigate, onOpenAuth, isD
     { label: 'الامتحانات', tab: 'exams' },
     { label: 'المتفوقون', section: 'lp-students' },
     ...(isStaff ? [{ label: 'لوحة المدرس', tab: 'admin' as Tab }] : []),
+    ...(isSecretary || isStaff ? [{ label: 'إدارة الكورسات', tab: 'courses' as Tab }] : []),
     ...(isSecretary || isStaff ? [{ label: 'تسجيل الغياب', tab: 'attendance' as Tab }] : []),
   ];
   const renderLinks = () => links.map(l => (

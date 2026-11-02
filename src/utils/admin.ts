@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { AttendanceRecord, AttendanceStatus } from '../types';
 import { databaseRequest } from './quizzes';
-import { readSession, AUTH_CHANGED } from './auth';
+import { readSession, ensureSession, AUTH_CHANGED } from './auth';
 import { supabaseUrl, supabasePublishableKey } from '../../shared/supabase.mjs';
 
 // ---------- attendance by code (teacher or secretary) ----------
@@ -59,7 +59,7 @@ export async function uploadCourseImage(courseId: string, file: File): Promise<s
   if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 15 * 1024 * 1024) {
     throw new Error('اختر صورة PNG أو JPG أو WebP بحجم لا يتجاوز 15 ميجابايت.');
   }
-  const token = readSession()?.access_token;
+  const token = (await ensureSession())?.access_token;
   if (!token) throw new Error('سجّل دخول المعلم لرفع الصور.');
   const bitmap = await createImageBitmap(file);
   const W = 1280, H = 720, scale = Math.max(W / bitmap.width, H / bitmap.height);
@@ -75,6 +75,6 @@ export async function uploadCourseImage(courseId: string, file: File): Promise<s
     method: 'POST', body: blob, signal: AbortSignal.timeout(60000),
     headers: { apikey: supabasePublishableKey, Authorization: `Bearer ${token}`, 'Content-Type': 'image/jpeg', 'Cache-Control': '31536000' },
   });
-  if (!r.ok) throw new Error(r.status === 401 || r.status === 403 ? 'رفع الصور متاح لحساب المعلم فقط.' : 'تعذر رفع الصورة. حاول مرة أخرى.');
+  if (!r.ok) throw new Error(r.status === 401 || r.status === 403 ? 'رفع الصور متاح لحساب المعلم والسكرتير.' : 'تعذر رفع الصورة. حاول مرة أخرى.');
   return `${supabaseUrl}/storage/v1/object/public/course-images/${path}`;
 }

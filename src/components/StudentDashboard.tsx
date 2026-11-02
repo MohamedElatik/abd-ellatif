@@ -1,3 +1,4 @@
+import { WatchDashboard } from './WatchDashboard';
 import { useState } from 'react';
 import type { User } from '../types';
 import { useAttempts, type SavedAttempt } from '../utils/records';
@@ -73,6 +74,7 @@ export function StudentDashboard({ user, onNavigate }: { user: User; onNavigate:
 
   return (
     <main className="sx-dash">
+      <WatchDashboard />
       <section className="sx-hero">
         <div className="sx-wrap sx-hero-in">
           <div className="sx-big-av">

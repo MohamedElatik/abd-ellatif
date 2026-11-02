@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mockCourses, mockLectures, mockQuizzes, mockStudents } from '../src/data/mockData';
-import { signIn, signUp, signOut, readSession, currentAuthUser, clearSession, refreshIdentity } from '../src/utils/auth';
+import { signIn, signUp, signOut, readSession, currentAuthUser, clearSession, refreshIdentity, ensureSession } from '../src/utils/auth';
 
 const values = new Map<string, string>();
+const persistent = new Map<string,string>();
 test('catalog and demo students only expose third secondary',()=>{
   for (const collection of [mockCourses, mockLectures, mockQuizzes, mockStudents]) {
     assert.ok(collection.length > 0); assert.ok(collection.every(item => item.grade === 'sec3'));
@@ -11,10 +12,11 @@ test('catalog and demo students only expose third secondary',()=>{
 });
 Object.assign(globalThis, {
   window: new EventTarget(),
+  localStorage: { getItem: (key: string) => persistent.get(key) ?? null, setItem: (key: string, value: string) => persistent.set(key, value), removeItem: (key: string) => persistent.delete(key) },
   sessionStorage: { getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, value: string) => values.set(key, value), removeItem: (key: string) => values.delete(key) },
 });
 const response = { access_token: 'test-access-token', refresh_token: 'must-not-be-stored', expires_in: 3600, user: { id: 'verified-user', email: 'student@example.invalid', email_confirmed_at: '2026-01-01', user_metadata: { name: 'Student', role: 'teacher', enrolledCourses: ['all'] } } };
-test('password login uses Auth and does not grant a metadata role or persist password/refresh token', async () => {
+test('password login uses Auth and does not grant a metadata role or persist password; remembers refresh session', async () => {
   clearSession();
   let calls = 0;
   globalThis.fetch = async (url, options) => {
@@ -25,8 +27,8 @@ test('password login uses Auth and does not grant a metadata role or persist pas
   const user = await signIn(' student@example.invalid ', 'test-password');
   assert.equal(calls,1); assert.equal(user.role,'student');
   assert.equal(readSession()?.access_token, 'test-access-token');
-  const stored=Array.from(values.values()).join('');
-  assert.ok(!stored.includes('must-not-be-stored'));assert.ok(!stored.includes('test-password'));
+  const stored=Array.from(persistent.values()).join('');
+  assert.ok(stored.includes('must-not-be-stored'));assert.ok(!stored.includes('test-password'));
   assert.ok(!stored.includes('enrolledCourses'));
 });
 test('failed credentials do not sign in',async()=>{
@@ -78,3 +80,11 @@ test('only server-controlled app metadata grants the secretary attendance UI',as
   clearSession();globalThis.fetch=async()=>Response.json({...response,user:{...response.user,app_metadata:{role:'superuser'}}});
   assert.equal((await signIn('x@example.invalid','abcdef')).role,'student');
 });
+
+test('remembered expired session rotates its refresh token once for concurrent requests',async()=>{
+ clearSession();persistent.set('biomaster_verified_session_v1',JSON.stringify({access_token:'old',refresh_token:'refresh-old',expires_at:1,user:response.user}));let calls=0;
+ globalThis.fetch=async(url,options)=>{calls++;assert.match(String(url),/grant_type=refresh_token/);assert.equal(JSON.parse(options!.body as string).refresh_token,'refresh-old');return Response.json({...response,access_token:'new',refresh_token:'refresh-new'});};
+ await Promise.all([ensureSession(),ensureSession()]);assert.equal(calls,1);assert.equal(readSession()?.access_token,'new');assert.match(persistent.get('biomaster_verified_session_v1')!,/refresh-new/);clearSession();assert.equal(persistent.size,0);
+});
+test('remember option off uses only session storage',async()=>{clearSession();globalThis.fetch=async()=>Response.json(response);await signIn('x@example.invalid','abcdef',false);assert.equal(persistent.size,0);assert.ok(values.has('biomaster_verified_session_v1'));clearSession();});
+test('revoked refresh session is cleared',async()=>{clearSession();persistent.set('biomaster_verified_session_v1',JSON.stringify({access_token:'old',refresh_token:'bad',expires_at:1,user:response.user}));globalThis.fetch=async()=>new Response('',{status:400});await assert.rejects(ensureSession());assert.equal(readSession(),null);assert.equal(persistent.size,0);});

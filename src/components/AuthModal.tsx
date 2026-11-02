@@ -8,6 +8,7 @@ interface Props { currentUser: User; onClose: () => void; onUserChanged: (user: 
 export function AuthModal({ currentUser, onClose, onUserChanged }: Props) {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
+  const [remember, setRemember] = useState(true);
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -21,10 +22,10 @@ export function AuthModal({ currentUser, onClose, onUserChanged }: Props) {
     event.preventDefault(); if (busy) return;
     setBusy(true); setError(''); setMessage('');
     try {
-      const user = mode === 'login' ? await signIn(email, password) : await signUp(email, password, { name: name.trim(), phone: phone.trim(), parentPhone: parentPhone.trim(), grade, governorate: governorate.trim() });
+      const user = mode === 'login' ? await signIn(email, password, remember) : await signUp(email, password, { name: name.trim(), phone: phone.trim(), parentPhone: parentPhone.trim(), grade, governorate: governorate.trim() });
       setPassword('');
       if (user) { onUserChanged(user); onClose(); }
-      else setMessage('راجع بريدك لتأكيد الحساب، ثم ارجع وسجّل الدخول. تفعيل الكورس يتم من المدرس بعد تأكيد اشتراكك.');
+      else setMessage('راجع بريدك لتأكيد الحساب، ثم ارجع وسجّل الدخول.');
     } catch (e) { setError(e instanceof Error ? e.message : 'تعذر تسجيل الدخول. حاول مرة أخرى.'); }
     finally { setBusy(false); }
   }
@@ -54,6 +55,7 @@ export function AuthModal({ currentUser, onClose, onUserChanged }: Props) {
         <label className="sx-field">كلمة المرور
           <input type="password" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} required minLength={mode === 'register' ? 6 : 1} value={password} onChange={e => setPassword(e.target.value)} />
         </label>
+        {mode === 'login' && <label><input type="checkbox" checked={remember} onChange={e=>setRemember(e.target.checked)}/> حفظ تسجيل الدخول على هذا الجهاز</label>}
         {mode === 'register' && <>
           <label className="sx-field">اسم الطالب<input required maxLength={100} value={name} onChange={e => setName(e.target.value)} autoComplete="name" /></label>
           <div className="sx-row2">

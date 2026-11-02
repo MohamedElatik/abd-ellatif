@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Quiz } from '../types';
-import { readSession, AUTH_CHANGED } from './auth';
+import { readSession, ensureSession, AUTH_CHANGED } from './auth';
 import { supabaseUrl, supabasePublishableKey } from '../../shared/supabase.mjs';
 export function quizHeaders() {
   const token=readSession()?.access_token;
@@ -8,6 +8,7 @@ export function quizHeaders() {
   return { apikey:supabasePublishableKey, Authorization:`Bearer ${token}`, 'Content-Type':'application/json' };
 }
 export async function databaseRequest(path: string, method='GET', body?: unknown, prefer='return=minimal') {
+  await ensureSession();
   const r=await fetch(`${supabaseUrl}/rest/v1/${path}`,{method,headers:{...quizHeaders(),Prefer:prefer},cache:'no-store',body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(15000)});
   if(!r.ok) throw new Error(r.status===401||r.status===403?'سجّل الدخول بالحساب المخوّل لهذا الإجراء.':'تعذر الحفظ أو التحميل من قاعدة البيانات. حاول مجددًا.');
   const content=await r.text();

@@ -154,4 +154,3 @@ export function CodeAttendance({ session, onSessionChange, onRowsChange, revisio
     </section>
   );
 }
-
