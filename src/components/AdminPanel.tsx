@@ -42,7 +42,8 @@ interface AdminPanelProps {
 }
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({ onSelectQuiz, onExitAdmin }) => {
-  const [activeTab, setActiveTab] = useState<'attendance' | 'quizzes' | 'students' | 'courses' | 'results' | 'secretaries'>('attendance');
+  const [activeTab, setActiveTab] = useState<'attendance' | 'quizzes' | 'students' | 'courses' | 'results' | 'secretaries'>(()=>{const t=new URLSearchParams(location.search).get('panel');return ['attendance','quizzes','students','courses','results','secretaries'].includes(t||'')?t as any:'attendance';});
+  useEffect(()=>{const u=new URL(location.href);u.searchParams.set('panel',activeTab);history.replaceState(null,'',u);},[activeTab]);
   const [studentMessage, setStudentMessage] = useState<{ text: string; err?: boolean } | null>(null);
 
   // Dynamic state loaded from persistent storage
@@ -543,3 +544,4 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSelectQuiz, onExitAdmi
     </div>
   );
 };
+

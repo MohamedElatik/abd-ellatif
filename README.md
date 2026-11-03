@@ -52,3 +52,16 @@ or `supabase db push`). Until it is applied, the new buttons below show a databa
 Database checks for these features are in `tests/admin-controls.sql` (run as database owner;
 fixtures are rolled back).
 
+
+## Staff groups, saved login and watch dashboard
+
+Attendance groups have independent IDs, a chosen roster, and a close action restricted to the creator or teacher. All attendance staff see updates on a five-second polling interval. Closing marks unrecorded members absent for reports; closed sessions reject edits. Excel downloads are genuine OOXML with text phone cells and no formula interpretation. Old attendance records remain stored unchanged.
+
+Secretaries can create/edit courses and lessons and upload course images, while deletion of students/results and role management remain teacher-only. Existing course image uploads save immediately; new courses require Save.
+
+Saved login stores rotating refresh tokens, never passwords, on the selected device. Renewal is serialized per tab and through browser locks where supported. Roles are rechecked against Auth, not trusted from storage.
+
+Video progress is private per authenticated user, with a local fallback for guests/offline use. The VdoCipher v2 API records unique watched seconds (seeking is excluded), last position and duration, and restores position on load. Progress is a study aid, not proof for grading. URL query parameters preserve page, teacher section and selected lesson.
+
+Validation: tests/features.test.ts, auth refresh tests and rolled-back tests/staff-features.sql.
+
