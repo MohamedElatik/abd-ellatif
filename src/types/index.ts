@@ -99,6 +99,7 @@ export interface Question {
   id: string;
   type: QuestionType;
   prompt: string;
+  imagePath?: string;
   options?: string[]; // For MCQ (typically 4 options)
   correctAnswer?: string; // For MCQ: option string; for Essay: model key points
   explanation: string;
@@ -151,3 +152,4 @@ export interface AttendanceRecord {
   status: AttendanceStatus;
   notes?: string;
 }
+

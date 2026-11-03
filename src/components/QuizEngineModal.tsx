@@ -1,3 +1,4 @@
+import { QuestionImage } from './QuestionImage';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -172,6 +173,7 @@ export const QuizEngineModal: React.FC<QuizEngineModalProps> = ({
                   {currentQ.prompt}
                 </div>
 
+                <QuestionImage path={currentQ.imagePath} />
                 {/* Biological Diagram if available */}
                 {currentQ.diagramUrl && (
                   <div className="rounded-xl overflow-hidden border border-slate-700 max-h-56 bg-slate-950 flex items-center justify-center">
@@ -279,6 +281,7 @@ export const QuizEngineModal: React.FC<QuizEngineModalProps> = ({
                     {result.pendingReview ? 'تم حفظ الامتحان — المقالي بانتظار التصحيح' : result.isPassed ? 'مبارك! اجتزت الاختبار بنجاح' : 'لم توفق هذه المرة، راجع أخطاءك'}
                   </h3>
 
+
                   <p className="text-xs text-slate-300 mb-4">
                     {result.isPassed
                       ? 'أداء متميز في استيعاب مفاهيم علم الأحياء والتفكير العلمي.'
@@ -332,7 +335,7 @@ export const QuizEngineModal: React.FC<QuizEngineModalProps> = ({
                         }`}
                       >
                         <div className="flex items-center justify-between">
-                          <span className="font-bold text-white">س {idx + 1}: {q.prompt}</span>
+                          <span className="font-bold text-white">س {idx + 1}: {q.prompt}</span><QuestionImage path={q.imagePath}/>
                           <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${
                             isCorrect ? 'text-emerald-400 bg-emerald-950' : 'text-rose-400 bg-rose-950'
                           }`}>
@@ -399,3 +402,4 @@ export const QuizEngineModal: React.FC<QuizEngineModalProps> = ({
     </div>
   );
 };
+

@@ -1,3 +1,4 @@
+import { currentAuthUser } from '../utils/auth';
 import { trackVideo } from '../utils/progress';
 /**
  * @license
@@ -54,7 +55,8 @@ export const VideosPageView: React.FC<VideosPageViewProps> = ({
   }, [playbackSpeed, activeVideo]);
 
   useEffect(()=>{if(!videoRef.current||!activeVideo||activeVideo.playbackProvider==='vdocipher')return;let cancelled=false;let stop=()=>{};void trackVideo(videoRef.current,activeVideo.id,()=>cancelled).then(f=>{stop=f;if(cancelled)stop();});return()=>{cancelled=true;stop();};},[activeVideo?.id]);
-  const filteredLectures = mockLectures.filter(lec => {
+  const loggedIn=currentAuthUser().id!=='guest';
+  const filteredLectures = (loggedIn?mockLectures:[]).filter(lec => {
     const matchesGrade = selectedGrade === 'all' || lec.grade === selectedGrade;
     const matchesSearch =
       searchQuery.trim() === '' ||
@@ -89,6 +91,7 @@ export const VideosPageView: React.FC<VideosPageViewProps> = ({
         {error&&<p role="alert">{error}</p>}<label>الكورس<select className="p-3 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700 mx-3" value={courseFilter} onChange={e=>setCourseFilter(e.target.value)}><option value="">كل الكورسات</option>{courses.map(c=><option key={c.id} value={c.id}>{c.title} — مجاني</option>)}</select></label>
         {!error&&mockLectures.length===0&&<p className="p-8 text-center rounded-xl border">لا توجد فيديوهات منشورة حاليًا. ستظهر هنا الكورسات والفيديوهات التي يضيفها المدرس.</p>}
         <div className="grid md:grid-cols-3 gap-4">{courses.map(c=><button key={c.id} className="sx-card text-right" onClick={()=>setCourseFilter(c.id)}>{c.thumbnail&&<img className="w-full aspect-video object-cover rounded-xl" src={c.thumbnail} alt={c.title}/>}<h3>{c.title}</h3><p>{c.totalLectures} دروس</p></button>)}</div>
+        {!loggedIn&&<div className="sx-card"><p>سجّل الدخول لعرض الدروس وتشغيل الفيديوهات.</p><button className="sx-btn sx-btn-primary" onClick={onSignIn}>تسجيل الدخول</button></div>}
         {/* Grade Selector Tabs (Bassthalk style) */}
         <div className="flex items-center gap-2 overflow-x-auto p-1 bg-white dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-800 w-fit shadow-xs">
           <button
@@ -107,7 +110,7 @@ export const VideosPageView: React.FC<VideosPageViewProps> = ({
         </div>
 
         {/* Video Player Modal/Theater (When a video is active) */}
-        {activeVideo && (
+        {activeVideo && loggedIn && (
           <div className="rounded-2xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-emerald-500/40 p-5 shadow-xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
               <div className="flex items-center gap-2">
@@ -288,3 +291,4 @@ export const VideosPageView: React.FC<VideosPageViewProps> = ({
     </div>
   );
 };
+

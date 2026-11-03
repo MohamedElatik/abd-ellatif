@@ -229,7 +229,7 @@ export default function App() {
                 </div>
 
                 <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400">
-                  الفيديوهات متاحة للجميع دون اشتراك.
+                  سجّل الدخول لمشاهدة الفيديوهات دون اشتراك.
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
@@ -278,3 +278,4 @@ export default function App() {
     </div>
   );
 }
+

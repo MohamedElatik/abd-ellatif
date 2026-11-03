@@ -47,7 +47,7 @@ export function LandingPage({ currentUser, onOpenAuth, onNavigate }: Props) {
           <h1>عبد اللطيف الجمل</h1>
           <p className="sub">منصة متخصصة في تدريس مادة الأحياء لطلاب الثانوية العامة</p>
           <div className="hero-cta">
-            <button className="btn btn-gold" onClick={() => onNavigate('videos')}>شاهد الفيديوهات مجانًا</button>
+            <button className="btn btn-gold" onClick={() => onNavigate('videos')}>تصفّح الكورسات</button>
             <button className="btn btn-ghost" onClick={() => go('lp-about')}>تعرّف علينا</button>
           </div>
           <div className="photo">
@@ -131,3 +131,4 @@ export function LandingPage({ currentUser, onOpenAuth, onNavigate }: Props) {
     </div>
   );
 }
+

@@ -1,3 +1,4 @@
+import { ensureSession } from '../utils/auth';
 import React, { useEffect, useState, useRef } from 'react';
 import { trackVideo } from '../utils/progress';
 let playerApi: Promise<void> | null=null;
@@ -15,11 +16,13 @@ export function DrmPlayer({ lectureId, title, onSignIn }: Props) {
     setPlayer(null); setError('');
     async function start() {
       try {
+        const session=await ensureSession();if(!session)throw new Error('سجّل الدخول لمشاهدة الفيديو.');
         const response = await fetch('/api/vdocipher/otp', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
           body: JSON.stringify({ lectureId }), cache: 'no-store', signal: controller.signal,
         });
         if (controller.signal.aborted) return;
+        if (response.status === 401) throw new Error('سجّل الدخول لمشاهدة الفيديو.');
         if (response.status === 403) throw new Error('الفيديو غير منشور أو لم يعد متاحًا.');
         if (response.status === 429) throw new Error('محاولات تشغيل كثيرة. انتظر دقيقة ثم حاول مجددًا.');
         if (!response.ok) throw new Error('تعذر تجهيز الفيديو الآن. حاول لاحقًا.');
@@ -44,3 +47,4 @@ export function DrmPlayer({ lectureId, title, onSignIn }: Props) {
     {error ? <button type="button" onClick={() => setVersion(v => v + 1)} className="rounded-lg bg-emerald-600 px-5 py-2">إعادة المحاولة</button> : null}
   </div>;
 }
+

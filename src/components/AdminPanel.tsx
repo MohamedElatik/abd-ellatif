@@ -63,6 +63,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSelectQuiz, onExitAdmi
   const { quizzes, error: quizzesError } = useQuizzes();
   const [quizError,setQuizError]=useState('');
   const [savingQuiz,setSavingQuiz]=useState(false);
+  const [imagesUploading,setImagesUploading]=useState(false);
 
   const {attempts,error:attemptsError}=useAttempts();
   const [recordsError,setRecordsError]=useState('');
@@ -142,6 +143,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSelectQuiz, onExitAdmi
   // Handler: Save New Quiz
   const handleCreateQuiz = async (e: React.FormEvent) => {
     e.preventDefault();
+    if(imagesUploading){setQuizError('انتظر اكتمال رفع صورة السؤال.');return;}
     if (savingQuiz) return;
     setQuizError('');
 
@@ -516,7 +518,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSelectQuiz, onExitAdmi
                   </div>
                 </div>
 
-                <QuestionEditor questions={newQuestions} onChange={setNewQuestions} />
+                <QuestionEditor onUploadingChange={setImagesUploading} questions={newQuestions} onChange={setNewQuestions} />
                 {quizError && <p role="alert" className="text-rose-300">{quizError}</p>}
 
                 <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
@@ -529,7 +531,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSelectQuiz, onExitAdmi
                   </button>
 
                   <button
-                    type="submit" disabled={savingQuiz}
+                    type="submit" disabled={savingQuiz||imagesUploading}
                     className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold shadow-md"
                   >
                     {savingQuiz ? 'جارٍ الحفظ…' : 'حفظ ونشر الاختبار'}
